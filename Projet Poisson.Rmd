@@ -11,22 +11,23 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Présentation du modèle
 ### Introduction 
 
-Dans ce projet, nous allons nous intéresser au processus de Poisson à réparation imparfaite dévellopé par Brown-Proschan (citer l'article) en 1983 que nous allons raccourcir en BP. Dans ce modèle, lorsque le système tombe en panne, on le répare parfaitement (comme neuf) avec une probabilité $p$, sinon, on le répare dans sa condition juste avant sa panne. \\ \\
-Pour se faire, commençons par introduire les notations qui nous serons nécessaire. On note $T_i$ les temps entre chaque panne. On note $A_i$ l'âge du système après la $i$-ème panne. Ainsi, $A_i=0$ si l'on a une réparation parfaite après la $i$-ème panne et $A_i=A_{i-1}+T_i>0$ si elle n'est pas parfaite. On note $F$ la fonction de répartition de l'âge sur $[0,+\infty]$ et $S$ la fonction de survie associé à $F$ i.e. $S(t)=P(T>t)=1-F(t)$.\\
+Dans ce projet, nous allons nous intéresser au processus de Poisson à réparation imparfaite dévellopé par Brown-Proschan (citer l'article) en 1983 que nous allons raccourcir en BP. Dans ce modèle, lorsque le système tombe en panne, celui-ci est réparé "parfaitement" avec une probabilité $p$: il redevient donc dans un état neuf. Sinon, le système est remis dans un état équivalent à celui précédant la panne.  \\
+Pour ce faire, commençons par introduire les notations qui nous seront nécessaires. On note $T_i$ les temps entre chaque panne. On note $A_i$ l'âge du système après la $i$-ème panne. Ainsi, $A_i=0$ si l'on a une réparation parfaite après la $i$-ème panne et $A_i=A_{i-1}+T_i>0$ sinon. On note $F$ la fonction de répartition de l'âge sur $[0,+\infty]$ et $S$ la fonction de survie associé à $F$ notée $S(t)=P(T>t)=1-F(t)$.\\
 Ainsi, les paramètres à estimer de notre modèle sont $(p,F)$. \\
-Ce modèle de BP peut-être vu comme une suite de réparation parfaite indépendante, ainsi, pour étudier les propriétés du modèle, nous allons nous restreindre l'étude à l'époque précédant la première réparation parfaite.
+Ce modèle de BP peut-être vu comme une suite de réparations parfaites indépendantes, ainsi, pour étudier les propriétés du modèle, nous allons restreindre l'étude à l'époque précédant la première réparation parfaite.
 On a le résultat suivant (citer BP 1983) qui nous dit que si $Y_1$ est l'âge du système à la première réparation parfaite, alors la fonction de survie $S_y$ de $Y_1$ vérifie: 
 $$
 S_y(t)=(S(t))^p
 $$
 ### Estimation des paramètres $(p,F)$
-Pour le modèle de BP, les paramètres $(p,F)$ ne peuvent pas être estimés avec la seule connaissance de la distribution des $T_i$. En effet, on peut montrer que pour deux valeurs de $p$ différentes et la même fonction $F$, on peut obtenir la même distribution des $T_i$.
-(Si $F$ est la fonction de répartition d'une loi exponentielle, alors les $T_i$ suivent la même loi exponentielle qui est indépendante de $p$)
+
+Pour le modèle de BP, les paramètres $(p,F)$ ne peuvent pas être estimés avec la seule connaissance de la distribution des $T_i$. En effet, on peut montrer que pour deux valeurs de $p$ différentes et la même fonction $F$, il est possible d'obtenir la même distribution des $T_i$.
+Par exemple, si $F$ est la fonction de répartition d'une loi exponentielle, alors les $T_i$ suivent la même loi exponentielle qui est indépendante de $p$.
 Bien que la fonction $F$ peut être estimer via les $T_i^$,le problème est qu'on ne peut estimer le paramètre $p$ avec la suite des $T_i$. \\ \\
-Pour remédier à cela, nous allons introduire une nouvelle suite de variable aléatoire de Bernoulli de paramètre $p$ que l'on note $Z_i$. A la $i$-ème panne, si la réparation est parfaite, alors $Z_i=1$ si elle est imparfaite, $Z_i=0$.
+Pour remédier à cela, nous allons introduire une nouvelle suite de variables aléatoires de Bernoulli de paramètre $p$ que l'on note $Z_i$. A la $i$-ème panne, si la réparation est parfaite alors $Z_i=1$ et si elle est imparfaite, $Z_i=0$.
 Rajouter cette information sur le type de panne qui est uniquement determiné par le paramètre $p$ rend le problème d'estimation solvable.\\\\
-A partir de maintenant, nous allons observer le système jusqu'à la $m$-ème réparation parfaite. On note $n$ le nombre total de panne (donc $n-m$ est le nombre de réparation imparfaite). \\ 
-La suite des âges observés $(a_i)$ est entièrement déterminé par les couples$(t_i,z_i)$. En notant $x_i$ l'âge observé juste avant la $i$-ème panne, on peut écrire la vraisemblance des $(T_i,Z_i)$:
+A partir de maintenant, nous allons observer le système jusqu'à la $m$-ème réparation parfaite. On note $n$ le nombre total de panne et donc $n-m$ est le nombre de réparation imparfaite. \\ 
+La suite des âges observés $(a_i)$ est entièrement déterminé par les couples $(t_i,z_i)$. En notant $x_i$ l'âge observé juste avant la $i$-ème panne, on peut écrire la vraisemblance des $(T_i,Z_i)$:
 $$
 L(p,F)=f(t_1)p^{z_1}(1-p)^{1-z_1}\times\frac{f(t_2+a_1)}{S(a_1)}p^{z_2}(1-p)^{1-z_2}\times ...\times\frac{f(t_n+a_{n-1})}{S(a_{n-1})}p^{z_n}(1-p)^{1-z_n}
 $$
@@ -36,17 +37,17 @@ Pour trouver le MLE non paramétrique de F, il faut maximiser:
 $$
 l(F)= \prod^n_{i=1}\frac{(F(x_{(i)})-F(x_{(i)}^-))}{S(x_{(i-1)})^{1-z_{(i-1)}}}
 $$
-où les $x_{(i)}$ sont les âges avant les pannes $x_i$ qui ont été ordonnés. Les $z_{(i)}$ ne sont pas ordonnés mais sont les $z_i$ réindexés pour que $z_{(i)}$ correspondent au mode de réparation après la panne survenue à l'âge $x_{(i)}$.\\
+où les $x_{(i)}$ sont les âges $x_i$ avant les pannes ordonnés. Les $z_{(i)}$ ne sont pas ordonnés mais sont les $z_i$ réindexés pour que $z_{(i)}$ correspondent au mode de réparation après la panne survenue à l'âge $x_{(i)}$.\\
 Malheureusement, le maximum de la fonction $l(F)$ n'est pas toujours atteignable. En général, si $z_{(n-1)}\neq1$ alors le maximum n'est pas atteignable. \\ Plaçons nous dans le cas où $z_{(n-1)}=1$. Définissons $\phi_i=\frac{S(x_{(i)})}{S(x_{(i-1)})}$ la probabilité de survivre après l'âge $x_{(i)}$ sachant que le système a survécu jusque l'âge $x_{(i-1)}$. Ainsi, notre problème de maximisation revient à maximiser par rapport à $\phi$:
 $$
 l(\phi)=\prod^n_{i=1}(1-\phi_i)\phi_i^{k_i}
 $$
-où $k_i=\sum^{n-1}_{j=i} z_{(j)}$ est le nombre de réparation parfaite pour des pannes intervenues à un âge supérieur à $x_{(i)}$.\\ 
+où $k_i=\sum^{n-1}_{j=i} z_{(j)}$ est le nombre de réparation parfaite pour des pannes intervenues à un âge supérieur à $x_{(i)}$.\\  (réparation parfaite?)
 On montre facilement que le maximum de cette fonction est atteint en :
 $$
 \hat\phi_i=\frac{k_i}{k_i+1} , 1\leq i\leq n-1 ; \hat\phi_n=0 
 $$
-Ainsi, on obtient le MLE non paramétriques de la fonction de survie $S$:
+Ainsi, on obtient le MLE non paramétrique de la fonction de survie $S$:
 $$
 \hat{S}(t) =
 \left\{
@@ -58,7 +59,7 @@ $$
 \right.
 $$
 
-Dans le cas où $z_{(n-1)}=0$, on a toujours le même maximiseur de $l(\phi)$ mais désormais par définition, $k_{n-1}=0$ et donc $\hat\phi_{n-1}=0$ ce qui implique que $\hat S(t)=0, t \geq x_{(n-1)}$. Ainsi, on voit que $l(\hat F)$ n'est pas défini car dans le dernier terme du produit, on a une division par 0. Voilà pourquoi dans ce cas, on a pas de MLE.
+Dans le cas où $z_{(n-1)}=0$, on a toujours le même maximiseur de $l(\phi)$ mais désormais par définition, $k_{n-1}=0$ et donc $\hat\phi_{n-1}=0$ ce qui implique que $\hat S(t)=0, t \geq x_{(n-1)}$. Ainsi, on voit que $l(\hat F)$ n'est pas défini car dans le dernier terme du produit, on a une division par 0. C'est pourquoi dans ce cas précis, il n'existe pas de MLE.
 
 ## Initialisation des paramètres
 
