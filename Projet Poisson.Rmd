@@ -1,6 +1,6 @@
 ---
 title: "Projet Poisson"
-author: "Arman Hosseini,Paul Slisse, Guillaume Staub, Jade Roumazeille-Peter"
+author: "Arman Hosseini, Paul Slisse, Guillaume Staub, Jade Roumazeille-Peter"
 date: "2025-03-14"
 output: pdf_document
 ---
@@ -11,43 +11,87 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Présentation du modèle
 ### Introduction 
 
-Dans ce projet, nous allons nous intéresser au processus de Poisson à réparation imparfaite dévellopé par Brown-Proschan (citer l'article) en 1983 que nous allons raccourcir en BP. Dans ce modèle, lorsque le système tombe en panne, celui-ci est réparé "parfaitement" avec une probabilité $p$: il redevient donc dans un état neuf. Sinon, le système est remis dans un état équivalent à celui précédant la panne.  \\
-Pour ce faire, commençons par introduire les notations qui nous seront nécessaires. On note $T_i$ les temps entre chaque panne. On note $A_i$ l'âge du système après la $i$-ème panne. Ainsi, $A_i=0$ si l'on a une réparation parfaite après la $i$-ème panne et $A_i=A_{i-1}+T_i>0$ sinon. On note $F$ la fonction de répartition de l'âge sur $[0,+\infty]$ et $S$ la fonction de survie associé à $F$ notée $S(t)=P(T>t)=1-F(t)$.\\
-Ainsi, les paramètres à estimer de notre modèle sont $(p,F)$. \\
-Ce modèle de BP peut-être vu comme une suite de réparations parfaites indépendantes, ainsi, pour étudier les propriétés du modèle, nous allons restreindre l'étude à l'époque précédant la première réparation parfaite.
-On a le résultat suivant (citer BP 1983) qui nous dit que si $Y_1$ est l'âge du système à la première réparation parfaite, alors la fonction de survie $S_y$ de $Y_1$ vérifie: 
-$$
-S_y(t)=(S(t))^p
-$$
-### Estimation des paramètres $(p,F)$
+Dans ce projet, nous allons nous intéresser au processus de Poisson à réparation imparfaite dévellopé par Brown-Proschan (citer l'article) en 1983 que nous allons raccourcir en BP. Dans ce modèle, lorsque le système tombe en panne, celui-ci est réparé "parfaitement" avec une probabilité $p$: il redevient donc dans un état neuf. Sinon, le système est remis dans un état équivalent à celui précédant la panne.  
+
+Pour ce faire, commençons par introduire les notations qui nous seront nécessaires. On note $T_i$ les temps entre chaque panne. On note $A_i$ l'âge du système après la $i$-ème panne. Ainsi, $A_i=0$ si l'on a une réparation parfaite après la $i$-ème panne et $A_i=A_{i-1}+T_i>0$ sinon. On note $F$ la fonction de répartition de l'âge sur $[0,+\infty]$ et $S$ la fonction de survie associé à $F$ notée $S(t)=P(T>t)=1-F(t)$.
+
+Ainsi, les paramètres à estimer de notre modèle sont $(p,F)$. 
+
+## Estimation des paramètres $(p,F)$
 
 Pour le modèle de BP, les paramètres $(p,F)$ ne peuvent pas être estimés avec la seule connaissance de la distribution des $T_i$. En effet, on peut montrer que pour deux valeurs de $p$ différentes et la même fonction $F$, il est possible d'obtenir la même distribution des $T_i$.
 Par exemple, si $F$ est la fonction de répartition d'une loi exponentielle, alors les $T_i$ suivent la même loi exponentielle qui est indépendante de $p$.
-Bien que la fonction $F$ peut être estimer via les $T_i^$,le problème est qu'on ne peut estimer le paramètre $p$ avec la suite des $T_i$. \\ \\
+Bien que la fonction $F$ peut être estimée via les $T_i$, le problème est que l'on ne peut estimer le paramètre $p$ avec la suite des $T_i$. 
+
+
 Pour remédier à cela, nous allons introduire une nouvelle suite de variables aléatoires de Bernoulli de paramètre $p$ que l'on note $Z_i$. A la $i$-ème panne, si la réparation est parfaite alors $Z_i=1$ et si elle est imparfaite, $Z_i=0$.
-Rajouter cette information sur le type de panne qui est uniquement determiné par le paramètre $p$ rend le problème d'estimation solvable.\\\\
-A partir de maintenant, nous allons observer le système jusqu'à la $m$-ème réparation parfaite. On note $n$ le nombre total de panne et donc $n-m$ est le nombre de réparation imparfaite. \\ 
-La suite des âges observés $(a_i)$ est entièrement déterminé par les couples $(t_i,z_i)$. En notant $x_i$ l'âge observé juste avant la $i$-ème panne, on peut écrire la vraisemblance des $(T_i,Z_i)$:
+Rajouter cette information sur le type de panne qui est uniquement determiné par le paramètre $p$ rend le problème d'estimation solvable.
+
+A partir de maintenant, nous allons faire les hypothèses suivantes pour notre étude :
+-$p>0$
+-$F$ est absolument continue (admet une densité $f$)
+-$F(0)=0$ (pas de réparation instantanée)
+
+Nous allons observer le système jusqu'à la $m$-ème réparation parfaite. On note $n$ le nombre total de panne et donc $n-m$ est le nombre de réparation imparfaite. 
+
+La suite des âges observés $(a_i)$ est entièrement déterminé par les couples $(t_i,z_i)$.
 $$
 L(p,F)=f(t_1)p^{z_1}(1-p)^{1-z_1}\times\frac{f(t_2+a_1)}{S(a_1)}p^{z_2}(1-p)^{1-z_2}\times ...\times\frac{f(t_n+a_{n-1})}{S(a_{n-1})}p^{z_n}(1-p)^{1-z_n}
 $$
-Avec cette écriture de la vraisemblance, on trouve le MLE de $p$: $\hat p =\frac{m}{n}$. Ce résultat est plutôt logique, on estime la probabilité $p$ de réparation parfaite en calculant le ratio de réparation parfaite sur le nombre total de panne. \\ \\
-Maintenant qu'on a le MLE de $p$, intéressons nous à $F$.\\
-Pour trouver le MLE non paramétrique de F, il faut maximiser:
+Pour comprendre cette formulation de la vraisemblance, on considère le cas n = 2 (les n > 2 se comprennent par récurrence).
+
+$$
+L(p,F|(t_1,t_2),(z_1, z_2))=f_{T_1,Z_1}(t_1, z_1)f_{T_2,Z_2}((t_2, z_2)|(T_1 = t_1, Z_1 = z_1))
+$$
+
+Par indépendance des événements "panne" est "la réparation est parfaite", on a :
+
+$$
+f_{T_1,Z_1}(t_1, z_1) = f(t_1)p^{z_1}(1-p)^{1-z_1}
+$$
+Ensuite, on a deux cas possibles :
+
+Si $z_1 = 0$ (réparation imparfaite), on a $a_1 = t_1$ : 
+
+$$
+f_{T_2,Z_2}((t_2, z_2)|(T_1 = t_1, Z_1 = z_1)) = \frac{f(t_2+a_1)}{S(a_1)} p^{z_2} (1-p)^{1-z_2}
+$$
+
+Si $z_1 = 1$ (réparation imparfaite), on a $a_1 = 0$ et $S(a_1) = 1$, d'où : 
+
+$$
+f_{T_2,Z_2}((t_2, z_2)|(T_1 = t_1, Z_1 = z_1)) = f(t_2) p^{z_2} (1-p)^{1-z_2} = \frac{f(t_2+a_1)}{S(a_1)} p^{z_2} (1-p)^{1-z_2}
+$$
+En notant $x_i$ l'âge observé juste avant la $i$-ème panne. Si $z_i=0$, on a directement que $a_i=x_i$, si $z_i=1$, $a_i=0$, $x_i=a_{i-1} +t_i$, mais on peut tout de même écrire que $S(a_i)=S(x_i)^{1-z_i}$. Si dans la formule de la vraisemblance, on remplace les $a_i$ par les $x_i$ et qu'on factorise les $p$ et $(1-p)$ ensemble à l'aide des $n$ et $m$ on obtient:
+
+$$
+L(p,F)=p^{m}(1-p)^{n-m}f(x_1) \frac{f(x_2)}{S(x_1)^{1-z_1}}\times ...\times\frac{f(x_n)}{S(x_{n-1})^{1-z_{n-1}}}
+$$
+
+Avec cette écriture de la vraisemblance, on trouve le MLE de $p$: $\hat p =\frac{m}{n}$. Ce résultat est plutôt logique, on estime la probabilité $p$ de réparation parfaite en calculant le ratio de réparation parfaite sur le nombre total de pannes. 
+
+Maintenant qu'on a le MLE de $p$, intéressons nous à $F$.
+
+Pour trouver un estimateur empirique du MLE de F, on peut maximiser la partie ne dépendant pas de $p$ dans la vraisemblance au dessus. Cela équivaut à déterminer $F$, qui est une fonction continue par morceaux, maximisant, l'estimation suivante de la vraisemblance:
 $$
 l(F)= \prod^n_{i=1}\frac{(F(x_{(i)})-F(x_{(i)}^-))}{S(x_{(i-1)})^{1-z_{(i-1)}}}
 $$
-où les $x_{(i)}$ sont les âges $x_i$ avant les pannes ordonnés. Les $z_{(i)}$ ne sont pas ordonnés mais sont les $z_i$ réindexés pour que $z_{(i)}$ correspondent au mode de réparation après la panne survenue à l'âge $x_{(i)}$.\\
-Malheureusement, le maximum de la fonction $l(F)$ n'est pas toujours atteignable. En général, si $z_{(n-1)}\neq1$ alors le maximum n'est pas atteignable. \\ Plaçons nous dans le cas où $z_{(n-1)}=1$. Définissons $\phi_i=\frac{S(x_{(i)})}{S(x_{(i-1)})}$ la probabilité de survivre après l'âge $x_{(i)}$ sachant que le système a survécu jusque l'âge $x_{(i-1)}$. Ainsi, notre problème de maximisation revient à maximiser par rapport à $\phi$:
+où la densité $f$ en $x_i$ est approximée par $F(x_{(i)})-F(x_{(i)}^-)$,les $x_{(i)}$ sont les âges $x_i$ avant les pannes ordonnés. Les $z_{(i)}$ ne sont pas ordonnés mais sont les $z_i$ réindexés pour que $z_{(i)}$ correspondent au mode de réparation après la panne survenue à l'âge $x_{(i)}$.
+En particulier notre MLE empirique ne sera pas nécessairement continue à l'inverse de la vraie fonction $F$.
+
+Malheureusement, le maximum de la fonction $l(F)$ n'est pas toujours atteignable. En effet, il faut que $z_{(n-1)} = 1$. 
+
+Plaçons nous dans le cas où $z_{(n-1)}=1$. Définissons $\phi_i=\frac{S(x_{(i)})}{S(x_{(i-1)})}$ la probabilité de survivre jusqu'à l'âge $x_{(i)}$ sachant que le système n'a pas eu de réparation parfaite depuis une durée $x_{(i-1)}$. Ainsi, notre problème de maximisation revient à maximiser par rapport à $\phi$:
 $$
 l(\phi)=\prod^n_{i=1}(1-\phi_i)\phi_i^{k_i}
 $$
-où $k_i=\sum^{n-1}_{j=i} z_{(j)}$ est le nombre de réparation parfaite pour des pannes intervenues à un âge supérieur à $x_{(i)}$.\\  (réparation parfaite?)
+où $k_i=\sum^{n-1}_{j=i} z_{(j)}$ est le nombre de réparation parfaites pour des pannes intervenues à un âge supérieur à $x_{(i)}$.
+
 On montre facilement que le maximum de cette fonction est atteint en :
 $$
 \hat\phi_i=\frac{k_i}{k_i+1} , 1\leq i\leq n-1 ; \hat\phi_n=0 
 $$
-Ainsi, on obtient le MLE non paramétrique de la fonction de survie $S$:
+Ainsi, on obtient le MLE empirique de la fonction de survie $S$:
 $$
 \hat{S}(t) =
 \left\{
@@ -59,7 +103,14 @@ $$
 \right.
 $$
 
-Dans le cas où $z_{(n-1)}=0$, on a toujours le même maximiseur de $l(\phi)$ mais désormais par définition, $k_{n-1}=0$ et donc $\hat\phi_{n-1}=0$ ce qui implique que $\hat S(t)=0, t \geq x_{(n-1)}$. Ainsi, on voit que $l(\hat F)$ n'est pas défini car dans le dernier terme du produit, on a une division par 0. C'est pourquoi dans ce cas précis, il n'existe pas de MLE.
+Dans le cas où $z_{(n-1)}=0$, on a toujours le même maximiseur de $l(\phi)$ mais désormais par définition, $k_{n-1}=0$ et donc $\hat\phi_{n-1}=0$ ce qui implique que $\hat S(t)=0, t \geq x_{(n-1)}$. Ainsi, on voit que notre approximation de la vraisemblance $l(F)$ n'est pas défini car dans le dernier terme du produit, on a une division par 0. C'est pourquoi dans ce cas précis, il n'existe pas de MLE empirique issu de la maximisation de notre estimation de la vraisemblance. Ce MLE empirique est en réalité un "neighbourhood MLE" de F dans une certaine topologie, on peut tout de même l'utiliser pour $z_{(n-1)}=0$.
+
+On peut construire d'autres estimateurs empiriques de $F$ :
+- en établissant la distribution empirique des $T_i | Z_{i-1} = 1$, c'est-à-dire des durées entre chaque réparation parfaite et la réparation suivante. On obtient ainsi une approximation de la densité, et en la cumulant, une estimation de la fonction de répartition.
+- en établissant la distribution empirique du processus de Poisson inhomogène obtenu en ne considérant que les durées entre deux réparations parfaites $Y_1$, ... , $Y_m$. On obtient ainsi une approximation de $S_y$, que l'on note $\hat S_y$. Or $S_y(t)=(S(t))^p$, donc on obtient via $1 - \hat S_y ^{n/m}$ notre estimateur de la fonction de répartition.
+Ces estimateurs n'exploitent pas toutes les informations issues des observations de $T$ et $Z$, contrairement au premier, on peut donc supposer qu'ils seront en moyenne moins performants.
+
+## Modelisation numerique 
 
 ## Initialisation des paramètres
 
@@ -68,7 +119,7 @@ set.seed(123)
 
 p <- 0.7 #on pose 0.7 la proba d'avoir une réparation parfaite
 lambda <- 0.1 #taux de défaillance qu'on pourra par la suite changer afin de voir les différents résultats
-m <- 10 #nombre de réparations parfaites qu'on va observer
+m <- 10 #nombre de réparations parfaites qu'on veut observer
 
 A <- 0  # age du système initial
 perfect_repairs <- 0  # compteur de réparations parfaites
@@ -109,13 +160,63 @@ while (perfect_repairs < m) {
   
 }
 print(T_vec)
-plot(cumsum(T_vec), Age_vec, type="s", col="blue", lwd=2,
+print(Z_vec)
+plot(cumsum(T_vec), Age_vec, type="l", col="blue", lwd=2,
      xlab="Temps cumulé", ylab="Âge du système",
      main="Évolution de l'âge du système sous réparations imparfaites")
-print(Z_vec)
+
 points(cumsum(T_vec)[Z_vec == 1], Age_vec[Z_vec == 1], col="red", pch=19)
 points(cumsum(T_vec), Age_vec, col="black", pch=2)
-legend("topleft", legend=c("Évolution de l'âge","Rep parfaite" ,"Réparations"), col=c("blue","red", "black"), pch=c(NA, 19, 2), lty=c(1, NA, NA))
+legend("topright", legend=c("Évolution de l'âge","Rep parfaite" ,"Réparations"), col=c("blue","red", "black"), pch=c(NA, 19, 2), lty=c(1, NA, NA))
+```
+
+On voit donc que graphe est cohérent d'après les résulats des différents vecteurs. En effet, lorsqu'il n'y a pas de réparations parfaites, l'âge du système ne cesse d'augmenter et à l'inverse, lorsqu'une réparation est parfaite, son âge retombe à zéro.
+
+Ce modèle de BP peut-être vu comme une suite de réparations parfaites indépendantes, ainsi, pour étudier les propriétés du modèle, nous allons restreindre l'étude à l'époque précédant la première réparation parfaite.
+On a le résultat suivant (citer BP 1983) qui nous dit que si $Y_1$ est l'âge du système à la première réparation parfaite, alors la fonction de survie $S_y$ de $Y_1$ vérifie: 
+$$
+S_y(t)=(S(t))^p
+$$
+
+En effet, en notant $r$ le taux de hasard associé à $T$, le taux de hasard associé à $Y_1$ est égal à $pr$ car la probabilité qu'une réparation ait lieu à l'instant t sachant qu'il n'y avait pas précédemment est égale à $r(t)$, et elle est alors parfaite avec une probabilité $p$, avec indépendance entre les deux phénomènes. On peut ensuite utiliser le lien entre taux de hasard et fonction de survie:
+$$
+S_y(t)=exp(-\int_0^t p r(x) dx)=(S(t))^p
+$$
+
+Traçons la fonction de survie.
+On sait que la focntion de survie d'une réparation parfaite est $S_{perfect}(t)=S(t)^p$ donc on en déduit que la fonction de survie d'une réparation imparfaite est $S_{perfect}(t)=S(t)^{1-p}$.
+
+```{r survie function, include=TRUE}
+time_vec <- cumsum(T_vec)
+S_parfait <- exp(-lambda * time_vec)  # Survie après réparation parfaite
+S_imparfait <- exp(-lambda * (1 - p) * time_vec)  # Survie avec réparation imparfaite
+S_Y <- exp(-lambda * p * time_vec) # Survie jusqu'à la prochaine réparation parfaite
+
+plot(time_vec, S_parfait, type="l", col="blue", lwd=2,
+     ylim=c(0,1), xlab="Temps", ylab="Probabilité de survie",
+     main="Fonctions de survie sous le modèle BP")
+
+lines(time_vec, S_Y, col="red", lwd=2, lty=2)  # Jusqu'à la réparation parfaite
+lines(time_vec, S_imparfait, col="green", lwd=2, lty=3)  # Avec réparations imparfaites
+
+# Ajouter une légende
+legend("topright", legend=c("S_parfait (Réparations parfaites)", 
+                            "S_Y (Jusqu'à réparation parfaite)", 
+                            "S_imparfait (Réparations imparfaites)"),
+       col=c("blue", "red", "green"), lty=c(1,2,3), lwd=2)
+
+grid()
+
+#print(time_vec)
+```
+
+
+
+```{r survie function, include=TRUE}
+index_order <- order(Age_vec)
+Age_vec_ord <- Age_vec[index_order]
+Z_vec_ord <- Z_vec[index_order]
+
 ```
 
 ```{r MLE_P, include=TRUE}
@@ -125,7 +226,5 @@ MLE_P <- function(m,n)
 }
 ```
 
-```{r Estimator_for_S, include=TRUE}
-x <- 
-```
+
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
