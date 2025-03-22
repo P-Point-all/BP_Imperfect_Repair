@@ -136,41 +136,63 @@ Age_vec <- c()
 On choisit pour commencer une loi exponentielle pour la durée de vie d'un système neuf. Nous changerons la loi ainsi que le lambda associé afin de voir les différents résultats.
 Les $Z_i$ suivent une loi Binomiale par leur définition: $\mathbb{P}(Z_i=1)=p$.
 
-```{r simul, eval=TRUE, include=TRUE}
-
-T_vec <- c(T_vec, 0)
-Z_vec <- c(Z_vec, 1)
-Age_vec <- c(Age_vec, 0)
-  
-
-while (perfect_repairs < m) {
-  T_i <- rexp(1, rate = lambda)  
-  Z_i <- rbinom(1, size = 1, prob = p)  
-  
-  if (Z_i == 1) {
-    A <- 0  
-    perfect_repairs <- perfect_repairs + 1
-  } else {
-    A <- A + T_i  
-  }
-  
-  T_vec <- c(T_vec, T_i)
-  Z_vec <- c(Z_vec, Z_i)
-  Age_vec <- c(Age_vec, A)
-  
+```{r simulPPh1,eval=FALSE}
+simulPPh1 <- function(k)
+{
+  return(cumsum(rexp(k, 1)))
 }
-print(T_vec)
-print(Z_vec)
-plot(cumsum(T_vec), Age_vec, type="l", col="blue", lwd=2,
-     xlab="Temps cumulé", ylab="Âge du système",
-     main="Évolution de l'âge du système sous réparations imparfaites")
-
-points(cumsum(T_vec)[Z_vec == 1], Age_vec[Z_vec == 1], col="red", pch=19)
-points(cumsum(T_vec), Age_vec, col="black", pch=2)
-legend("topright", legend=c("Évolution de l'âge","Rep parfaite" ,"Réparations"), col=c("blue","red", "black"), pch=c(NA, 19, 2), lty=c(1, NA, NA))
 ```
 
-On voit donc que graphe est cohérent d'après les résulats des différents vecteurs. En effet, lorsqu'il n'y a pas de réparations parfaites, l'âge du système ne cesse d'augmenter et à l'inverse, lorsqu'une réparation est parfaite, son âge retombe à zéro.
+```{r invWeibull, eval=FALSE}
+invWeibull <- function(y, alpha=1, beta=2)
+{
+  return(alpha*y**(1/beta))
+}
+```
+
+```{r simul, eval=TRUE, include=TRUE}
+simulPPIWeibull <- function(m, alpha, beta, p)
+{
+  k <- rgeom(1, p)+1
+  A_k = simulPPh1(k)
+  T_k = c(invWeibull(A_k, alpha, beta))
+  S_k = c(exp(-(T_k/alpha)**beta))
+  for(i in 1:m-1)
+  {
+   k <- rgeom(1, p)+1
+   A_k = simulPPh1(k)
+   T_k_temp = c(invWeibull(A_k, alpha, beta))
+   T_k = c(T_k, tail(T_k,1) + T_k_temp)
+   S_k = c(S_k, exp(-(T_k_temp/alpha)**beta))
+  }
+  print(length(T_k))
+  print(length(S_k))
+  return(list(T = T_k, S = S_k))
+}
+```
+
+
+```{r plot}
+result <-simulPPIWeibull(5,1,2,0.2)
+plot(result$T,result$S)
+```
+
+```{r}
+vec[0]
+vec[1]
+#plot(vec[0],vec[1])
+```
+
+```{r MLE_P, include=TRUE}
+MLE_P <- function(m,n)
+{
+  return(m/n)
+}
+```
+
+
+
+#On voit donc que graphe est cohérent d'après les résulats des différents vecteurs. En effet, lorsqu'il n'y a pas de réparations parfaites, l'âge du système ne cesse d'augmenter et à l'inverse, lorsqu'une réparation est parfaite, son âge retombe à zéro.
 
 Ce modèle de BP peut-être vu comme une suite de réparations parfaites indépendantes, ainsi, pour étudier les propriétés du modèle, nous allons restreindre l'étude à l'époque précédant la première réparation parfaite.
 On a le résultat suivant (citer BP 1983) qui nous dit que si $Y_1$ est l'âge du système à la première réparation parfaite, alors la fonction de survie $S_y$ de $Y_1$ vérifie: 
@@ -183,48 +205,3 @@ $$
 S_y(t)=exp(-\int_0^t p r(x) dx)=(S(t))^p
 $$
 
-Traçons la fonction de survie.
-On sait que la focntion de survie d'une réparation parfaite est $S_{perfect}(t)=S(t)^p$ donc on en déduit que la fonction de survie d'une réparation imparfaite est $S_{perfect}(t)=S(t)^{1-p}$.
-
-```{r survie function, include=TRUE}
-time_vec <- cumsum(T_vec)
-S_parfait <- exp(-lambda * time_vec)  # Survie après réparation parfaite
-S_imparfait <- exp(-lambda * (1 - p) * time_vec)  # Survie avec réparation imparfaite
-S_Y <- exp(-lambda * p * time_vec) # Survie jusqu'à la prochaine réparation parfaite
-
-plot(time_vec, S_parfait, type="l", col="blue", lwd=2,
-     ylim=c(0,1), xlab="Temps", ylab="Probabilité de survie",
-     main="Fonctions de survie sous le modèle BP")
-
-lines(time_vec, S_Y, col="red", lwd=2, lty=2)  # Jusqu'à la réparation parfaite
-lines(time_vec, S_imparfait, col="green", lwd=2, lty=3)  # Avec réparations imparfaites
-
-# Ajouter une légende
-legend("topright", legend=c("S_parfait (Réparations parfaites)", 
-                            "S_Y (Jusqu'à réparation parfaite)", 
-                            "S_imparfait (Réparations imparfaites)"),
-       col=c("blue", "red", "green"), lty=c(1,2,3), lwd=2)
-
-grid()
-
-#print(time_vec)
-```
-
-
-
-```{r survie function, include=TRUE}
-index_order <- order(Age_vec)
-Age_vec_ord <- Age_vec[index_order]
-Z_vec_ord <- Z_vec[index_order]
-
-```
-
-```{r MLE_P, include=TRUE}
-MLE_P <- function(m,n)
-{
-  return(m/n)
-}
-```
-
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
