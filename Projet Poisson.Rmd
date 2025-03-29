@@ -136,12 +136,26 @@ Age_vec <- c()
 On choisit pour commencer une loi exponentielle pour la durée de vie d'un système neuf. Nous changerons la loi ainsi que le lambda associé afin de voir les différents résultats.
 Les $Z_i$ suivent une loi Binomiale par leur définition: $\mathbb{P}(Z_i=1)=p$.
 
+On simule ici le modèle. Pour ce faire, on commence par créer deux fonctions: "simulPPh1" et "invWeibull". La fonction "simulPPh1" permet de simuler un processus de poisson homogène: on simule $k$ fois une variable aléatoire suivant la loi exponentielle de paramètre 1 ce qui nous donne une liste de nombres telle que $[n_1 , n_2,...,n_k]$. On renvoie ensuite les temps d'arrivés simulés (notés $A_k$ dans la fonction "simulPPIWeibull") qui représentent la somme cumulée telle que $[n_1, n_1+n_2,... , n_1+...+n_k]$.
+
 ```{r simulPPh1,eval=FALSE}
 simulPPh1 <- function(k)
 {
   return(cumsum(rexp(k, 1)))
 }
 ```
+
+La fonction "invWeibull" renvoie l'intensité cumulée inverse de Weibull: $\Lambda^{-1}$. Montrons comment nous l'avons trouvé:
+
+Nous avons prouvé en cours que la fonction d'intensité cumulée est égale à $\Lambda(t)=(\frac{t}{\alpha})^{\beta}$ avec  $\alpha , \beta$ des paramètres strictement positifs. Calculons l'inverse de cette fonction:
+$$
+y=(\frac{t}{\alpha})^{\beta}
+\iff
+y^{\frac{1}{\beta}} = \frac{t}{\alpha}
+\iff
+t=\alpha y^{\frac{1}{\beta}}
+$$
+Ainsi, $\lambda^{-1}(y)=\alpha y^{\frac{1}{\beta}}$. On l'implémente donc avec comme paramètre $\beta=2$ et $\alpha=1$.
 
 ```{r invWeibull, eval=FALSE}
 invWeibull <- function(y, alpha=1, beta=2)
@@ -150,37 +164,56 @@ invWeibull <- function(y, alpha=1, beta=2)
 }
 ```
 
+On peut maintenant simuler le modèle BP. Pour cela, on génère une variable aléatoire géométrique de paramètre $p = 0.2$, représentant le nombre $k$ de réparations imparfaites nécessaires avant d'atteindre la première réparation parfaite. On simule ensuite le processus homogène comme expliqué précédemment et on retourne les temps $T_i = \Lambda^{-1}(A_i)$ et les valeurs de la fonction de survie de la loi Weibull: $S(t)=exp{(-(\frac{t}{\alpha})^{\beta})}$ créant ainsi un processus de poisson inhomogène. On réitère cela $m$ fois où $m$ représente le nombre de réparations parfaites.
+
+EXPLIQUER POURQUOI ON DIT QUE C EST UN PROCESSUS HOMOGENE
+
 ```{r simul, eval=TRUE, include=TRUE}
 simulPPIWeibull <- function(m, alpha, beta, p)
 {
   k <- rgeom(1, p)+1
   A_k = simulPPh1(k)
   T_k = c(invWeibull(A_k, alpha, beta))
-  S_k = c(exp(-(T_k/alpha)**beta))
+  S_k = c(1, exp(-(T_k[-1]/alpha)**beta)) # j'enlève la première valeur pour la remplacer par 1
+  T_succes = c(tail(T_k,1)) #le temps où il ya la rep parfaite
+  S_succes = c(tail(S_k,1)) #et sa valeur de fonction de survie associée
   for(i in 1:m-1)
   {
    k <- rgeom(1, p)+1
    A_k = simulPPh1(k)
    T_k_temp = c(invWeibull(A_k, alpha, beta))
    T_k = c(T_k, tail(T_k,1) + T_k_temp)
-   S_k = c(S_k, exp(-(T_k_temp/alpha)**beta))
+   S_k = c(S_k, 1, exp(-(T_k_temp[-1]/alpha)**beta))
+   T_succes = c(T_succes, tail(T_k,1))
+   S_succes = c(S_succes, tail(S_k,1))
   }
   print(length(T_k))
-  print(length(S_k))
-  return(list(T = T_k, S = S_k))
+  print(length(S_k)) 
+  return(list(T = T_k, S = S_k, T_succes = T_succes, S_succes = S_succes))
 }
 ```
 
+On plot la
 
 ```{r plot}
 result <-simulPPIWeibull(5,1,2,0.2)
-plot(result$T,result$S)
+print(result)
+plot(result$T,result$S, type='o')
+points(result$T_succes, result$S_succes, col='red')
+cat("T succes:")
+print(result$T_succes)
+cat("S succes:")
+print(result$S_succes)
 ```
 
 ```{r}
-vec[0]
-vec[1]
-#plot(vec[0],vec[1])
+MLE_S <- function(T_i)
+{
+  A <- 0
+  Age_vec <- c()
+  Age_vec <- c(Age_vec, A + T_i)
+  
+}
 ```
 
 ```{r MLE_P, include=TRUE}
