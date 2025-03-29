@@ -8,6 +8,10 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+```{r lib,include=FALSE}
+library(ggplot2)
+```
+
 ## Présentation du modèle
 ### Introduction 
 
@@ -117,7 +121,7 @@ Ces estimateurs n'exploitent pas toutes les informations issues des observations
 ```{r I1}
 set.seed(123)
 
-p <- 0.7 #on pose 0.7 la proba d'avoir une réparation parfaite
+p <- 0.2 #on pose 0.7 la proba d'avoir une réparation parfaite
 lambda <- 0.1 #taux de défaillance qu'on pourra par la suite changer afin de voir les différents résultats
 m <- 10 #nombre de réparations parfaites qu'on veut observer
 
@@ -174,7 +178,7 @@ simulPPIWeibull <- function(m, alpha, beta, p)
   k <- rgeom(1, p)+1
   A_k = simulPPh1(k)
   T_k = c(invWeibull(A_k, alpha, beta))
-  S_k = c(1, exp(-(T_k[-1]/alpha)**beta)) # j'enlève la première valeur pour la remplacer par 1
+  S_k = c(exp(-(head(T_k,-1)/alpha)**beta),1) # j'enlève la première valeur pour la remplacer par 1
   T_succes = c(tail(T_k,1)) #le temps où il ya la rep parfaite
   S_succes = c(tail(S_k,1)) #et sa valeur de fonction de survie associée
   for(i in 1:m-1)
@@ -183,38 +187,38 @@ simulPPIWeibull <- function(m, alpha, beta, p)
    A_k = simulPPh1(k)
    T_k_temp = c(invWeibull(A_k, alpha, beta))
    T_k = c(T_k, tail(T_k,1) + T_k_temp)
-   S_k = c(S_k, 1, exp(-(T_k_temp[-1]/alpha)**beta))
+   S_k = c(S_k,exp(-(T_k_temp[-1]/alpha)**beta),1)
    T_succes = c(T_succes, tail(T_k,1))
    S_succes = c(S_succes, tail(S_k,1))
   }
-  print(length(T_k))
-  print(length(S_k)) 
-  return(list(T = T_k, S = S_k, T_succes = T_succes, S_succes = S_succes))
+  return(list(T = T_k,S=S_k, T_succes = T_succes,S_succes=S_succes))
 }
 ```
 
 On plot la
 
 ```{r plot}
-result <-simulPPIWeibull(5,1,2,0.2)
+m <- 5
+p <- 0.1
+result <- simulPPIWeibull(m, 4, 2, p)
 print(result)
-plot(result$T,result$S, type='o')
-points(result$T_succes, result$S_succes, col='red')
-cat("T succes:")
-print(result$T_succes)
-cat("S succes:")
-print(result$S_succes)
-```
 
-```{r}
-MLE_S <- function(T_i)
-{
-  A <- 0
-  Age_vec <- c()
-  Age_vec <- c(Age_vec, A + T_i)
-  
-}
+# Mise en forme des données
+df_result <- data.frame(T = result$T, S = result$S)
+df_succes <- data.frame(T = result$T_succes, S = result$S_succes)
+# Plot ggplot
+ggplot(df_result, aes(x = T, y = S)) +
+  geom_point(color = "black", size = 2) +            # points
+  geom_point(data = df_succes, aes(x = T, y = S), color = "red", size = 3) +
+  labs(title = "Processus simulé",
+       x = "Temps (T)",
+       y = "Fonction de survie (S)") +
+  theme_minimal(base_size = 14)
+
 ```
+On voit donc que graphe est cohérent d'après les résulats des différents vecteurs. En effet, lorsqu'il n'y a pas de réparations parfaites, l'âge du système ne cesse d'augmenter et à l'inverse, lorsqu'une réparation est parfaite, son âge retombe à zéro.
+
+## Estimation du paramètre $p$ par maximum de vraisemblance
 
 ```{r MLE_P, include=TRUE}
 MLE_P <- function(m,n)
@@ -223,9 +227,127 @@ MLE_P <- function(m,n)
 }
 ```
 
+```{r}
+p_hat <- c()
+for (m in 1:1000) {
+  process <- simulPPIWeibull(m, 1, 2, 0.2)
+  p_hat <- c(p_hat, m / length(process$T))
+}
+
+df <- data.frame(m = 1:1000, p_hat = p_hat)
+
+  ggplot(df, aes(x = m, y = p_hat)) +
+    geom_point(color = "blue", size = 1) +       
+    geom_hline(yintercept = 0.2, color = "red", linetype = "dashed", size = 1) +  
+    labs(title = "Estimation de p̂ en fonction de m",
+         x = "m",
+         y = "p̂") +
+    theme_minimal(base_size = 14)
+
+```
+
+## Estimation de l'intensité du processus par plusieurs méthodes
+### Estimation par maximum de vraisemblance ou neighbourhood MLE
+On rappelle la  formule du MLE qui est bien défini uniquement si $z_{(n-1)}=1$ (voir première partie du document):
+$$
+\hat{S}(t) =
+\left\{
+\begin{array}{ll}
+  1, & t < x_{(1)} \\
+  \prod\limits_{j=1}^{i} \hat{\phi}_j, & x_{(i)} < t < x_{(i+1)}, \quad i=1,\dots,n-1 \\
+  0, & t \geq x_{(n)}
+\end{array}
+\right.
+$$
+On rappelle également que cet estimateur peut être utilisé pour $z_{(n-1)}=0$ mais devient un neighbourhood MLE et est nul pour $t\geq x_{(J+1)}$ où $J$ est le dernier indice pour lequel $z_{(J)}=1$ (en dehors de $z_{(n)}$).
+```{r}
+simulPPIWeibull2 <- function(m, alpha, beta, p)
+{
+  k <- rgeom(1, p)+1
+  A_k = simulPPh1(k)
+  T_k = c(invWeibull(A_k, alpha, beta))
+  Z_k = c(rep(0,k-1),1)
+  T_succes = tail(T_k,1)
+  for(i in 1:m-1)
+  {
+   k <- rgeom(1, p)+1
+   A_k = simulPPh1(k)
+   T_k_temp = c(invWeibull(A_k, alpha, beta))
+   T_k = c(T_k, tail(T_k,1) + T_k_temp)
+   Z_k = c(Z_k,rep(0,k-1),1)
+   T_succes = c(T_succes, tail(T_k,1))
+  }
+  return(list(T = T_k,Z=Z_k, T_succes = T_succes))
+}
+```
+
+```{r}
+res<-simulPPIWeibull2(10,4,2,0.2)
+Z<-res$Z
+T<-res$T
+print(res)
+#ca marche bien
+```
 
 
-#On voit donc que graphe est cohérent d'après les résulats des différents vecteurs. En effet, lorsqu'il n'y a pas de réparations parfaites, l'âge du système ne cesse d'augmenter et à l'inverse, lorsqu'une réparation est parfaite, son âge retombe à zéro.
+```{r}
+MLE_S <- function(T,Z)
+{
+  n<-length(Z)
+  x <- c()
+  last_perfect <- 0
+  for (i in 1:n){
+    x <- c(x,T[i]-last_perfect)
+  if (Z[i]==1){
+    last_perfect<-T[i]
+  }
+  }
+  idx<-order(x)
+  x_order<-x[idx]
+  z_order<-Z[idx]
+  phi_hat<-c()
+  for (i in 1:(n-1)){
+    k<-sum(z_order[i:(n-1)])
+    phi_hat<-c(phi_hat,k/(k+1))
+  }
+  phi_hat<-c(phi_hat,0)
+  return(list(x_order = x_order,phi_hat=phi_hat))
+}
+plot_MLE_S <-function(t,x_order,phi_hat) {
+  x_order<-c(x_order,Inf)
+  S_hat<-rep(1,length(t))
+  # Inférieur au premier temps de panne
+  count<-1
+  while (t[count]<x[1]){
+    count<-count+1
+  }
+  i<-1
+  phi<-phi_hat[1]
+  #Entre deux temps de pannes ou supérieur au dernier
+  for (j in count:length(t)){
+    if (t[j]>x_order[i+1]){
+      phi<-phi*phi_hat[i]
+      i<-i+1
+    }
+    S_hat[j]=phi
+  }
+  df <- data.frame(t = t, S_hat = S_hat)
+  ggplot(df, aes(x = t, y = S_hat)) +
+  geom_point(color = "black", size = 1) +       
+  geom_line()+
+  labs(title = "Estimation de S en fonction du temps",
+       x = "t",
+       y = "S") +
+  theme_minimal(base_size = 14)
+}
+```
+
+```{r}
+r<-MLE_S(T,Z)
+t<-seq(0,20,0.1)
+plot_MLE_S(t,r$x_order,r$phi_hat)
+```
+
 
 Ce modèle de BP peut-être vu comme une suite de réparations parfaites indépendantes, ainsi, pour étudier les propriétés du modèle, nous allons restreindre l'étude à l'époque précédant la première réparation parfaite.
 On a le résultat suivant (citer BP 1983) qui nous dit que si $Y_1$ est l'âge du système à la première réparation parfaite, alors la fonction de survie $S_y$ de $Y_1$ vérifie: 
@@ -237,4 +359,5 @@ En effet, en notant $r$ le taux de hasard associé à $T$, le taux de hasard ass
 $$
 S_y(t)=exp(-\int_0^t p r(x) dx)=(S(t))^p
 $$
+
 
