@@ -12,8 +12,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(ggplot2)
 ```
 
-## Présentation du modèle
-### Introduction 
+# I.Présentation du modèle
+## 1.Introduction 
 
 Dans ce projet, nous allons nous intéresser au processus de Poisson à réparation imparfaite dévellopé par Brown-Proschan (citer l'article) en 1983 que nous allons raccourcir en BP. Dans ce modèle, lorsque le système tombe en panne, celui-ci est réparé "parfaitement" avec une probabilité $p$: il redevient donc dans un état neuf. Sinon, le système est remis dans un état équivalent à celui précédant la panne.  
 
@@ -21,7 +21,7 @@ Pour ce faire, commençons par introduire les notations qui nous seront nécessa
 
 Ainsi, les paramètres à estimer de notre modèle sont $(p,F)$. 
 
-## Estimation des paramètres $(p,F)$
+## 2.Estimation des paramètres $(p,F)$
 
 Pour le modèle de BP, les paramètres $(p,F)$ ne peuvent pas être estimés avec la seule connaissance de la distribution des $T_i$. En effet, on peut montrer que pour deux valeurs de $p$ différentes et la même fonction $F$, il est possible d'obtenir la même distribution des $T_i$.
 Par exemple, si $F$ est la fonction de répartition d'une loi exponentielle, alors les $T_i$ suivent la même loi exponentielle qui est indépendante de $p$.
@@ -109,38 +109,29 @@ $$
 
 Dans le cas où $z_{(n-1)}=0$, on a toujours le même maximiseur de $l(\phi)$ mais désormais par définition, $k_{n-1}=0$ et donc $\hat\phi_{n-1}=0$ ce qui implique que $\hat S(t)=0, t \geq x_{(n-1)}$. Ainsi, on voit que notre approximation de la vraisemblance $l(F)$ n'est pas défini car dans le dernier terme du produit, on a une division par 0. C'est pourquoi dans ce cas précis, il n'existe pas de MLE empirique issu de la maximisation de notre estimation de la vraisemblance. Ce MLE empirique est en réalité un "neighbourhood MLE" de F dans une certaine topologie, on peut tout de même l'utiliser pour $z_{(n-1)}=0$.
 
-On peut construire d'autres estimateurs empiriques de $F$ :
-- en établissant la distribution empirique des $T_i | Z_{i-1} = 1$, c'est-à-dire des durées entre chaque réparation parfaite et la réparation suivante. On obtient ainsi une approximation de la densité, et en la cumulant, une estimation de la fonction de répartition.
-- en établissant la distribution empirique du processus de Poisson inhomogène obtenu en ne considérant que les durées entre deux réparations parfaites $Y_1$, ... , $Y_m$. On obtient ainsi une approximation de $S_y$, que l'on note $\hat S_y$. Or $S_y(t)=(S(t))^p$, donc on obtient via $1 - \hat S_y ^{n/m}$ notre estimateur de la fonction de répartition.
-Ces estimateurs n'exploitent pas toutes les informations issues des observations de $T$ et $Z$, contrairement au premier, on peut donc supposer qu'ils seront en moyenne moins performants.
+Ce modèle de BP peut-être vu comme une suite de réparations parfaites indépendantes, ainsi, on peut se restreindre aux temps de réparations parfaites pour étudier les propriétés du modèle.
+On a le résultat suivant (citer BP 1983) qui nous dit que si $Y_1$ est l'âge du système à la première réparation parfaite, alors la fonction de survie $S_y$ de $Y_1$ vérifie: 
+$$
+S_y(t)=(S(t))^p
+$$
 
-## Modelisation numerique 
+En effet, en notant $r$ le taux de hasard associé à $T$, le taux de hasard associé à $Y_1$ est égal à $pr$ car la probabilité qu'une réparation ait lieu à l'instant t sachant qu'il n'y avait pas précédemment est égale à $r(t)$, et elle est alors parfaite avec une probabilité $p$, avec indépendance entre les deux phénomènes. On peut ensuite utiliser le lien entre taux de hasard et fonction de survie:
+$$
+S_y(t)=exp(-\int_0^t p r(x) dx)=(S(t))^p
+$$
+En établissant la distribution empirique du processus de Poisson inhomogène obtenu en ne considérant que les durées entre deux réparations parfaites $Y_1$, ... , $Y_m$. On obtient ainsi une approximation de $S_y$, que l'on note $\hat S_y$. Or $S_y(t)=(S(t))^p$, donc on obtient via $1 - \hat S_y ^{n/m}$ un autre estimateur de la fonction de répartition.
 
-## Initialisation des paramètres
+On peut également établir la distribution empirique des $T_i | Z_{i-1} = 1$, c'est-à-dire des durées entre chaque réparation parfaite et la réparation suivante. On obtient ainsi une approximation de la densité, et en la cumulant, une nouvelle estimation de la fonction de répartition.
 
-```{r I1}
-set.seed(123)
+Ces deux derniers estimateurs n'exploitent pas toutes les informations issues des observations de $T$ et $Z$, contrairement au premier, on peut donc supposer qu'ils seront moins performants.
 
-p <- 0.2 #on pose 0.7 la proba d'avoir une réparation parfaite
-lambda <- 0.1 #taux de défaillance qu'on pourra par la suite changer afin de voir les différents résultats
-m <- 10 #nombre de réparations parfaites qu'on veut observer
+# II.Modelisation numerique 
 
-A <- 0  # age du système initial
-perfect_repairs <- 0  # compteur de réparations parfaites
-```
+## 1.Simulation d'un processus de Weibull
 
-```{r I2}
-T_vec <- c()  #vecteur qui stock les Ti (temps entre chaque pannes consécutives)
-Z_vec <- c() 
-Age_vec <- c() 
-```
-
-## Simulation du processus
-
-On choisit pour commencer une loi exponentielle pour la durée de vie d'un système neuf. Nous changerons la loi ainsi que le lambda associé afin de voir les différents résultats.
 Les $Z_i$ suivent une loi Binomiale par leur définition: $\mathbb{P}(Z_i=1)=p$.
 
-On simule ici le modèle. Pour ce faire, on commence par créer deux fonctions: "simulPPh1" et "invWeibull". La fonction "simulPPh1" permet de simuler un processus de poisson homogène: on simule $k$ fois une variable aléatoire suivant la loi exponentielle de paramètre 1 ce qui nous donne une liste de nombres telle que $[n_1 , n_2,...,n_k]$. On renvoie ensuite les temps d'arrivés simulés (notés $A_k$ dans la fonction "simulPPIWeibull") qui représentent la somme cumulée telle que $[n_1, n_1+n_2,... , n_1+...+n_k]$.
+On simule ici le modèle. Pour ce faire, on commence par créer deux fonctions: $\textbf{simulPPh1}$ et $\textbf{invWeibull}$. La fonction $\textbf{simulPPh1}$ permet de simuler un processus de poisson homogène: on simule $k$ fois une variable aléatoire suivant la loi exponentielle de paramètre 1 ce qui nous donne une liste de nombres telle que $[n_1 , n_2,...,n_k]$. On renvoie ensuite les temps d'arrivés simulés (notés $A_k$ dans la fonction $\textbf{simulPPIWeibull}$ ) qui représentent la somme cumulée telle que $[n_1, n_1+n_2,... , n_1+...+n_k]$.
 
 ```{r simulPPh1,eval=FALSE}
 simulPPh1 <- function(k)
@@ -149,7 +140,7 @@ simulPPh1 <- function(k)
 }
 ```
 
-La fonction "invWeibull" renvoie l'intensité cumulée inverse de Weibull: $\Lambda^{-1}$. Montrons comment nous l'avons trouvé:
+La fonction $\textbf{invWeibull}$ renvoie l'intensité cumulée inverse de Weibull: $\Lambda^{-1}$. Montrons comment nous l'avons trouvé:
 
 Nous avons prouvé en cours que la fonction d'intensité cumulée est égale à $\Lambda(t)=(\frac{t}{\alpha})^{\beta}$ avec  $\alpha , \beta$ des paramètres strictement positifs. Calculons l'inverse de cette fonction:
 $$
@@ -159,7 +150,7 @@ y^{\frac{1}{\beta}} = \frac{t}{\alpha}
 \iff
 t=\alpha y^{\frac{1}{\beta}}
 $$
-Ainsi, $\lambda^{-1}(y)=\alpha y^{\frac{1}{\beta}}$. On l'implémente donc avec comme paramètre $\beta=2$ et $\alpha=1$.
+Ainsi, $\Lambda^{-1}(y)=\alpha y^{\frac{1}{\beta}}$. On l'implémente donc avec comme paramètres par défaut $\beta=2$ et $\alpha=1$.
 
 ```{r invWeibull, eval=FALSE}
 invWeibull <- function(y, alpha=1, beta=2)
@@ -168,17 +159,16 @@ invWeibull <- function(y, alpha=1, beta=2)
 }
 ```
 
-On peut maintenant simuler le modèle BP. Pour cela, on génère une variable aléatoire géométrique de paramètre $p = 0.2$, représentant le nombre $k$ de réparations imparfaites nécessaires avant d'atteindre la première réparation parfaite. On simule ensuite le processus homogène comme expliqué précédemment et on retourne les temps $T_i = \Lambda^{-1}(A_i)$ et les valeurs de la fonction de survie de la loi Weibull: $S(t)=exp{(-(\frac{t}{\alpha})^{\beta})}$ créant ainsi un processus de poisson inhomogène. On réitère cela $m$ fois où $m$ représente le nombre de réparations parfaites.
+On peut maintenant simuler le modèle BP. Pour cela, on génère une variable aléatoire géométrique de paramètre $p$, représentant le nombre $k$ de réparations imparfaites nécessaires avant d'atteindre la première réparation parfaite. On simule ensuite le processus homogène comme expliqué précédemment et on retourne les temps $T_i = \Lambda^{-1}(A_i)$ et les valeurs de la fonction de survie de la loi Weibull: $S(t)=exp{(-(\frac{t}{\alpha})^{\beta})}$ créant ainsi un processus de poisson inhomogène. On réitère cela $m$ fois où $m$ représente le nombre de réparations parfaites.
 
-EXPLIQUER POURQUOI ON DIT QUE C EST UN PROCESSUS HOMOGENE
-
+## 2.Première simulation d'un processus de Brown-Prosschan 
 ```{r simul, eval=TRUE, include=TRUE}
 simulPPIWeibull <- function(m, alpha, beta, p)
 {
   k <- rgeom(1, p)+1
   A_k = simulPPh1(k)
   T_k = c(invWeibull(A_k, alpha, beta))
-  S_k = c(exp(-(head(T_k,-1)/alpha)**beta),1) # j'enlève la première valeur pour la remplacer par 1
+  S_k = c(exp(-(head(T_k,-1)/alpha)**beta),1) 
   T_succes = c(tail(T_k,1)) #le temps où il ya la rep parfaite
   S_succes = c(tail(S_k,1)) #et sa valeur de fonction de survie associée
   for(i in 1:m-1)
@@ -195,20 +185,18 @@ simulPPIWeibull <- function(m, alpha, beta, p)
 }
 ```
 
-On plot la
-
+On va désormais afficher les résultats d'une simulation de notre processus de BP pour vérifier que notre code marche bien. Pour cela, on affiche pour chaque temps de pannes, la valeur de la fonction de survie théorique (calculable explicitement dans le cas de Weibull).
 ```{r plot}
 m <- 5
-p <- 0.1
+p <- 0.2
 result <- simulPPIWeibull(m, 4, 2, p)
 print(result)
 
-# Mise en forme des données
 df_result <- data.frame(T = result$T, S = result$S)
 df_succes <- data.frame(T = result$T_succes, S = result$S_succes)
-# Plot ggplot
+
 ggplot(df_result, aes(x = T, y = S)) +
-  geom_point(color = "black", size = 2) +            # points
+  geom_point(color = "black", size = 2) +          
   geom_point(data = df_succes, aes(x = T, y = S), color = "red", size = 3) +
   labs(title = "Processus simulé",
        x = "Temps (T)",
@@ -216,17 +204,17 @@ ggplot(df_result, aes(x = T, y = S)) +
   theme_minimal(base_size = 14)
 
 ```
-On voit donc que graphe est cohérent d'après les résulats des différents vecteurs. En effet, lorsqu'il n'y a pas de réparations parfaites, l'âge du système ne cesse d'augmenter et à l'inverse, lorsqu'une réparation est parfaite, son âge retombe à zéro.
+On voit donc que graphe est cohérent d'après les résulats des différents vecteurs. En effet, lorsqu'il n'y a pas de réparations parfaites, l'âge du système ne cesse d'augmenter et la valeur de la fonction de survie tend vers 0 et à l'inverse, lorsqu'une réparation est parfaite, son âge retombe à zéro et la fonction de survie vaut à nouveau 1.
 
-## Estimation du paramètre $p$ par maximum de vraisemblance
-
+## 3.Estimation du paramètre $p$ par maximum de vraisemblance
+On implémente le calcul du MLE trouvé précedemment :$\hat p=m/n$.
 ```{r MLE_P, include=TRUE}
 MLE_P <- function(m,n)
 {
   return(m/n)
 }
 ```
-
+Pour observer le bon comportement de notre estimateur, on va simuler des processus pour des valeurs de $m$ croissantes et calculer à chaque fois notre $\hat p$.
 ```{r}
 p_hat <- c()
 for (m in 1:1000) {
@@ -241,13 +229,13 @@ df <- data.frame(m = 1:1000, p_hat = p_hat)
     geom_hline(yintercept = 0.2, color = "red", linetype = "dashed", size = 1) +  
     labs(title = "Estimation de p̂ en fonction de m",
          x = "m",
-         y = "p̂") +
+         y = "p") +
     theme_minimal(base_size = 14)
 
 ```
-
-## Estimation de l'intensité du processus par plusieurs méthodes
-### Estimation par maximum de vraisemblance ou neighbourhood MLE
+On observe que plus $m$ augmente, plus notre estimation poctuelle se rapproche de la vraie valeur de $p$. On observe également que la variance diminue.
+## 4.Estimation de l'intensité du processus par plusieurs méthodes
+### a.Estimation par maximum de vraisemblance ou neighbourhood MLE
 On rappelle la  formule du MLE qui est bien défini uniquement si $z_{(n-1)}=1$ (voir première partie du document):
 $$
 \hat{S}(t) =
@@ -260,6 +248,7 @@ $$
 \right.
 $$
 On rappelle également que cet estimateur peut être utilisé pour $z_{(n-1)}=0$ mais devient un neighbourhood MLE et est nul pour $t\geq x_{(J+1)}$ où $J$ est le dernier indice pour lequel $z_{(J)}=1$ (en dehors de $z_{(n)}$).
+On définit une nouvelle fonction $\textbf{simulPPIWeibull2}$, qui s'inspire fortement de la première simulation mais qui ne renvoie pas les mêmes choses. Ici on retourne les instants de pannes, la type de réparation associé à chaque panne ($=Z$) ainsi que les instants de réparations parfaites (sous ensemble de $T$).
 ```{r}
 simulPPIWeibull2 <- function(m, alpha, beta, p)
 {
@@ -284,12 +273,12 @@ simulPPIWeibull2 <- function(m, alpha, beta, p)
 ```{r}
 res<-simulPPIWeibull2(10,4,2,0.2)
 Z<-res$Z
-T<-res$T
+T<-res$T 
 print(res)
-#ca marche bien
+
 ```
 
-
+On implémente maintenant le calcul du MLE (ou neighbourhood MLE en fonction des cas) trouvé précedemment. La fonction $\textbf{MLE_S}$ renvoie les vecteurs $x_{()}$ et $\hat \phi$ permettant de construire le MLE. On a ensuite une deuxième fonction $\textbf{plot_MLE_S}$ qui permet de construire graphiquement le MLE en retournant ses valeurs pour une séquence de temps $t$.
 ```{r}
 MLE_S <- function(T,Z)
 {
@@ -318,7 +307,7 @@ plot_MLE_S <-function(t,x_order,phi_hat) {
   S_hat<-rep(1,length(t))
   # Inférieur au premier temps de panne
   count<-1
-  while (t[count]<x[1]){
+  while (t[count]<x_order[1]){
     count<-count+1
   }
   i<-1
@@ -331,33 +320,165 @@ plot_MLE_S <-function(t,x_order,phi_hat) {
     }
     S_hat[j]=phi
   }
-  df <- data.frame(t = t, S_hat = S_hat)
-  ggplot(df, aes(x = t, y = S_hat)) +
+  return(S_hat)
+}
+```
+
+On teste le calcul et l'affichage de notre estimateur sur une simulation simple.
+```{r}
+r<-MLE_S(T,Z)
+t<-seq(0,10,0.01)
+S_hatBP <- plot_MLE_S(t,r$x_order,r$phi_hat)
+df <- data.frame(t = t, S_hat = S_hatBP)
+ggplot(df, aes(x = t, y = S_hatBP)) +
   geom_point(color = "black", size = 1) +       
   geom_line()+
   labs(title = "Estimation de S en fonction du temps",
        x = "t",
        y = "S") +
   theme_minimal(base_size = 14)
+```
+### b.Estimation de l'intensité du processus en utilisant les temps de pannes à la suite d'une réparation parfaite
+On va maintenant utiliser la distribution empirique des $T_i | Z_{i-1} = 1$, c'est-à-dire des durées entre chaque réparation parfaite et la réparation suivante pour obtenir une approximation de la densité. En la cumulant, on obtient une estimation de la fonction de répartition.
+On définit comme avant 2 fonctions, une nous retournant tout le nécessaire pour construire l'estimateur et une seconde pour construire l'estimateur et retourner les valeurs en une séquence de temps $t$ donnée.
+```{r}
+library(ggplot2)
+MLE_emp_1 <- function(T,Z)
+{
+  n<-length(Z)
+  delta_t <- c()
+  last_perfect <- 0
+  for (i in 1:(n-1)){
+    if(Z[i]==1){
+      delta_t <- c(delta_t,T[i+1]-T[i])
+    }
+  }
+  idd<-order(delta_t)
+  delta_t_ordered <- delta_t[idd]
+  return(delta_t_ordered)
+}
+
+plot_MLE_emp_1 <- function(t, x)
+{
+  num_perfect <- length(x)
+  x<-c(x,Inf)
+  S_hat<-rep(1,length(t))
+  # Inférieur au premier temps de panne
+  count<-1
+  while (t[count]<x[1]){
+    S_hat[count] <- 1
+    count<-count+1
+  }
+  i<-1
+  S_hat[count]<-(num_perfect - 1)/num_perfect
+  #Entre deux temps de pannes ou supérieur au dernier
+  for (j in count:length(t)){
+    if (t[j]>x[i+1]){
+      i<-i+1
+    }
+    S_hat[j]=(num_perfect - i)/num_perfect
+  }
+  return(S_hat)
+}
+```
+On teste l'affichage de l'estimateur sur la même simulation que l'estimateur précédent.
+```{r}
+idd<-MLE_emp_1(T,Z)
+idd
+t<-seq(0,10,0.01)
+S_hat_e1 <- plot_MLE_emp_1(t,idd)
+df <- data.frame(t = t, S_hat_e1 =S_hat_e1)
+ggplot(df, aes(x = t, y =S_hat_e1)) +
+  geom_point(color = "black", size = 1) +       
+  geom_line()+
+  labs(title = "Estimation de S en fonction du temps (estimateur empirique 1)",
+       x = "t",
+       y = "S") +
+  theme_minimal(base_size = 14)
+```
+### c.Estimation de l'intensité du processus avec uniquement les temps de réparations parfaites
+On va maintenant utiliser la distribution empirique du processus de Poisson inhomogène obtenu en ne considérant que les durées entre deux réparations parfaites $Y_1$, ... , $Y_m$. On obtient ainsi une approximation de $S_y$, que l'on note $\hat S_y$. Or $S_y(t)=(S(t))^p$, donc on obtient via $1 - \hat S_y ^{n/m}$ notre estimateur de la fonction de répartition.
+On reprend les mêmes conventions de codes que pour les deux estimateurs précédent.
+```{r}
+MLE_emp_2_c <- function(T,Z)
+{
+  n<-length(Z)
+  perfects <- c()
+  last_perfect <- 0
+  for (i in 1:n){
+    if(Z[i]==1){
+      perfects <- c(perfects,T[i])
+    }
+  }
+  inter_perfects <- c()
+  inter_perfects <- c(perfects[1])
+  for (i in 1:length(perfects)-1){
+    inter_perfects <- c(inter_perfects, perfects[i+1] - perfects[i])
+  }
+  idd<-order(inter_perfects)
+  inter_perfects_ordered <- inter_perfects[idd]
+  return(inter_perfects_ordered)
+}
+
+plot_MLE_emp_2 <- function(t, ipo, Z)
+{
+  num_repairs <- length(Z)
+  num_perfect <- length(ipo)
+  ipo<-c(ipo,Inf)
+  S_hat_y<-rep(1,length(t))
+  # Inférieur au premier temps de panne
+  count<-1
+  while (t[count]<ipo[1]){
+    S_hat_y[count] <- 1
+    count<-count+1
+  }
+  i<-1
+  S_hat_y[count]<-(num_perfect - 1)/num_perfect
+  #Entre deux temps de pannes ou supérieur au dernier
+  for (j in (count+1):length(t)){
+    if (t[j]>ipo[i+1]){
+      i<-i+1
+    }
+    S_hat_y[j]=(num_perfect - i)/num_perfect
+  }
+  
+  S_hat <- (S_hat_y)**(num_repairs / num_perfect)
+  
+  return(S_hat)
 }
 ```
 
 ```{r}
-r<-MLE_S(T,Z)
-t<-seq(0,20,0.1)
-plot_MLE_S(t,r$x_order,r$phi_hat)
+ipo<-MLE_emp_2_c(T,Z)
+ipo
+t<-seq(0,10,0.01)
+S_hat_e2 <- plot_MLE_emp_2(t,ipo, Z)
+df <- data.frame(t = t, S_hat_e2 =S_hat_e2)
+ggplot(df, aes(x = t, y =S_hat_e2)) +
+  geom_point(color = "black", size = 1) +       
+  geom_line()+
+  labs(title = "Estimation de S en fonction du temps (estimateur empirique 2)",
+       x = "t",
+       y = "S") +
+  theme_minimal(base_size = 14)
 ```
 
+### d.Comparaison des estimateurs
+Pour comparer nos estimateurs de la fonction de survie $S$, on va évaluer la fonction de survie théorique d'un processus de Weibull, que l'on peut calculer, en une séquence de temps positifs. On va ensuite afficher sur le même graphe cette courbe exacte et celles obtenues avec chacun des estimateurs.
+```{r SWeibull, eval=FALSE}
+SWeibull <- function(y, alpha=1, beta=2)
+{
+  return(exp(-(y/alpha)**beta))
+}
+```
 
-Ce modèle de BP peut-être vu comme une suite de réparations parfaites indépendantes, ainsi, pour étudier les propriétés du modèle, nous allons restreindre l'étude à l'époque précédant la première réparation parfaite.
-On a le résultat suivant (citer BP 1983) qui nous dit que si $Y_1$ est l'âge du système à la première réparation parfaite, alors la fonction de survie $S_y$ de $Y_1$ vérifie: 
-$$
-S_y(t)=(S(t))^p
-$$
-
-En effet, en notant $r$ le taux de hasard associé à $T$, le taux de hasard associé à $Y_1$ est égal à $pr$ car la probabilité qu'une réparation ait lieu à l'instant t sachant qu'il n'y avait pas précédemment est égale à $r(t)$, et elle est alors parfaite avec une probabilité $p$, avec indépendance entre les deux phénomènes. On peut ensuite utiliser le lien entre taux de hasard et fonction de survie:
-$$
-S_y(t)=exp(-\int_0^t p r(x) dx)=(S(t))^p
-$$
-
+```{r Comparaison_visuelle, eval=FALSE}
+t<-seq(0,10,0.01)
+plot(SWeibull(t, 4,2), col = "black")
+lines(S_hatBP, col = "red")
+lines(S_hat_e1, col = "blue")
+lines(S_hat_e2, col = "green")
+```
+En plus de ce critère graphique qui permet une identification visuelle de la performance, on va implémenter 2 critères numériques, la MSE et la variance en fonction du nombre de réparations parfaites $m$.
+## 5.Conclusion
 
