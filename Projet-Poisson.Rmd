@@ -26,7 +26,7 @@ library(dplyr)
 # Présentation du modèle
 ## Introduction 
 
-Dans ce projet, nous allons nous intéresser au processus de Poisson à réparation imparfaite dévellopé par Brown et Proschan [@Brown1983] en 1983 , retravaillé par Whitaker et Samaniego [@Whitaker1989], que nous allons raccourcir par la suite en BP. Dans ce modèle, lorsque le système tombe en panne, celui-ci est réparé "parfaitement" avec une probabilité $p$: il redevient donc dans un état neuf. Sinon, le système est remis dans un état équivalent à celui précédant la panne.  
+Dans ce projet, nous allons nous intéresser au processus de Poisson à réparation imparfaite développé par Brown et Proschan [@Brown1983] en 1983 , retravaillé par Whitaker et Samaniego [@Whitaker1989], que nous allons raccourcir par la suite en BP. Dans ce modèle, lorsque le système tombe en panne, celui-ci est réparé "parfaitement" avec une probabilité $p$: il redevient donc dans un état neuf. Sinon, le système est remis dans un état équivalent à celui précédant la panne.  
 
 Pour ce faire, commençons par introduire les notations qui nous seront nécessaires. On note $T_i$ les temps entre chaque panne. On note $A_i$ l'âge du système après la $i$-ème panne. Ainsi, $A_i=0$ si l'on a une réparation parfaite après la $i$-ème panne et $A_i=A_{i-1}+T_i>0$ sinon. On note $F$ la fonction de répartition de l'âge sur $[0,+\infty[$ et $S$ la fonction de survie associé à $F$ notée $S(t)=P(T>t)=1-F(t)$.
 
@@ -90,7 +90,7 @@ Pour trouver un estimateur empirique du MLE de F, on peut maximiser la partie ne
 $$
 l(F)= \prod^n_{i=1}\frac{(F(x_{(i)})-F(x_{(i)}^-))}{S(x_{(i-1)})^{1-z_{(i-1)}}}
 $$
-où la densité $f$ en $x_i$ est approximée par $F(x_{(i)})-F(x_{(i)}^-)$,les $x_{(i)}$ sont les âges $x_i$ avant les pannes ordonnés. Les $z_{(i)}$ ne sont pas ordonnés mais sont les $z_i$ réindexés pour que $z_{(i)}$ correspondent au mode de réparation après la panne survenue à l'âge $x_{(i)}$.
+où la densité $f$ en $x_i$ est approximée par $F(x_{(i)})-F(x_{(i)}^-)$, les $x_{(i)}$ sont les âges (ordonnés) $x_i$ avant les pannes. Les $z_{(i)}$ ne sont pas ordonnés mais sont les $z_i$ réindexés pour que les $z_{(i)}$ correspondent au mode de réparation après la panne survenue à l'âge $x_{(i)}$.
 En particulier notre MLE empirique ne sera pas nécessairement continu à l'inverse de la vraie fonction $F$.
 
 Malheureusement, le maximum de la fonction $l(F)$ n'est pas toujours atteignable. En effet, il faut que $z_{(n-1)} = 1$ [@Whitaker1989]. 
@@ -99,7 +99,7 @@ Plaçons nous dans le cas où $z_{(n-1)}=1$. Définissons $\phi_i=\frac{S(x_{(i)
 $$
 l(\phi)=\prod^n_{i=1}(1-\phi_i)\phi_i^{k_i}
 $$
-où $k_i=\sum^{n-1}_{j=i} z_{(j)}$ est le nombre de réparation parfaites pour des pannes intervenues à un âge supérieur à $x_{(i)}$.
+où $k_i=\sum^{n-1}_{j=i} z_{(j)}$ est le nombre de réparations parfaites pour des pannes intervenues à un âge supérieur à $x_{(i)}$.
 
 On montre facilement que le maximum de cette fonction est atteint en :
 $$
@@ -117,7 +117,7 @@ $$
 \right.
 $$
 
-Dans le cas où $z_{(n-1)}=0$, on a toujours le même maximiseur de $l(\phi)$ mais désormais par définition, $k_{n-1}=0$ et donc $\hat\phi_{n-1}=0$ ce qui implique que $\hat S(t)=0, t \geq x_{(n-1)}$. Ainsi, on voit que notre approximation de la vraisemblance $l(F)$ n'est pas définie car dans le dernier terme du produit, on a une division par 0. C'est pourquoi dans ce cas précis, il n'existe pas de MLE empirique issu de la maximisation de notre estimation de la vraisemblance. Ce MLE empirique est en réalité un "neighbourhood MLE" de F dans une certaine topologie, on peut tout de même l'utiliser pour $z_{(n-1)}=0$.
+Dans le cas où $z_{(n-1)}=0$, on a toujours le même maximiseur de $l(\phi)$, mais désormais par définition, $k_{n-1}=0$ et donc $\hat\phi_{n-1}=0$ ce qui implique que $\hat S(t)=0, t \geq x_{(n-1)}$. Ainsi, on voit que notre approximation de la vraisemblance $l(F)$ n'est pas définie car dans le dernier terme du produit, on a une division par 0. C'est pourquoi dans ce cas précis, il n'existe pas de MLE empirique issu de la maximisation de notre estimation de la vraisemblance. Ce MLE empirique est en réalité un "neighbourhood MLE" de F dans une certaine topologie, on peut tout de même l'utiliser pour $z_{(n-1)}=0$.
 
 Ce modèle de BP peut-être vu comme une suite de réparations parfaites indépendantes, ainsi, on peut se restreindre aux temps de réparations parfaites pour étudier les propriétés du modèle.
 On a le résultat suivant (citer BP 1983) qui nous dit que si $Y_1$ est l'âge du système à la première réparation parfaite, alors la fonction de survie $S_y$ de $Y_1$ vérifie: 
@@ -217,7 +217,7 @@ ggplot(df_result, aes(x = T, y = S)) +
 On voit donc que le graphe est cohérent d'après les résulats des différents vecteurs. En effet, lorsqu'il n'y a pas de réparations parfaites, l'âge du système ne cesse d'augmenter et la valeur de la fonction de survie tend vers 0 et à l'inverse, lorsqu'une réparation est parfaite, son âge retombe à zéro et la fonction de survie vaut à nouveau 1.
 
 ## Estimation du paramètre $p$ par maximum de vraisemblance
-On implémente le calcul du MLE trouvé précedemment :$\hat p=m/n$.
+On implémente le calcul du MLE trouvé précedemment: $\hat p=m/n$.
 ```{r MLE_P, include=TRUE}
 MLE_P <- function(m,n)
 {
