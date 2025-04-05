@@ -26,9 +26,9 @@ library(dplyr)
 # Présentation du modèle
 ## Introduction 
 
-Dans ce projet, nous allons nous intéresser au processus de Poisson à réparation imparfaite dévellopé par Brown et Proschan [@Brown1983] en 1983 ,retravaillé par Whitaker et Samaniego [@Whitaker1989],que nous allons raccourcir en BP. Dans ce modèle, lorsque le système tombe en panne, celui-ci est réparé "parfaitement" avec une probabilité $p$: il redevient donc dans un état neuf. Sinon, le système est remis dans un état équivalent à celui précédant la panne.  
+Dans ce projet, nous allons nous intéresser au processus de Poisson à réparation imparfaite dévellopé par Brown et Proschan [@Brown1983] en 1983 , retravaillé par Whitaker et Samaniego [@Whitaker1989], que nous allons raccourcir par la suite en BP. Dans ce modèle, lorsque le système tombe en panne, celui-ci est réparé "parfaitement" avec une probabilité $p$: il redevient donc dans un état neuf. Sinon, le système est remis dans un état équivalent à celui précédant la panne.  
 
-Pour ce faire, commençons par introduire les notations qui nous seront nécessaires. On note $T_i$ les temps entre chaque panne. On note $A_i$ l'âge du système après la $i$-ème panne. Ainsi, $A_i=0$ si l'on a une réparation parfaite après la $i$-ème panne et $A_i=A_{i-1}+T_i>0$ sinon. On note $F$ la fonction de répartition de l'âge sur $[0,+\infty]$ et $S$ la fonction de survie associé à $F$ notée $S(t)=P(T>t)=1-F(t)$.
+Pour ce faire, commençons par introduire les notations qui nous seront nécessaires. On note $T_i$ les temps entre chaque panne. On note $A_i$ l'âge du système après la $i$-ème panne. Ainsi, $A_i=0$ si l'on a une réparation parfaite après la $i$-ème panne et $A_i=A_{i-1}+T_i>0$ sinon. On note $F$ la fonction de répartition de l'âge sur $[0,+\infty[$ et $S$ la fonction de survie associé à $F$ notée $S(t)=P(T>t)=1-F(t)$.
 
 Ainsi, les paramètres à estimer de notre modèle sont $(p,F)$. 
 
@@ -36,20 +36,19 @@ Ainsi, les paramètres à estimer de notre modèle sont $(p,F)$.
 
 Pour le modèle de BP, les paramètres $(p,F)$ ne peuvent pas être estimés avec la seule connaissance de la distribution des $T_i$. En effet, on peut montrer que pour deux valeurs de $p$ différentes et la même fonction $F$, il est possible d'obtenir la même distribution des $T_i$.
 Par exemple, si $F$ est la fonction de répartition d'une loi exponentielle, alors les $T_i$ suivent la même loi exponentielle qui est indépendante de $p$.
-Bien que la fonction $F$ peut être estimée via les $T_i$, le problème est que l'on ne peut estimer le paramètre $p$ avec la suite des $T_i$. 
-
+Bien que la fonction $F$ puisse être estimée via les $T_i$, le problème est que l'on ne peut estimer le paramètre $p$ avec la suite des $T_i$. 
 
 Pour remédier à cela, nous allons introduire une nouvelle suite de variables aléatoires de Bernoulli de paramètre $p$ que l'on note $Z_i$. A la $i$-ème panne, si la réparation est parfaite alors $Z_i=1$ et si elle est imparfaite, $Z_i=0$.
-Rajouter cette information sur le type de panne qui est uniquement determiné par le paramètre $p$ rend le problème d'estimation solvable.
+Rajouter cette information sur le type de panne qui est uniquement determiné par le paramètre $p$ rend le problème d'estimation soluble.
 
 A partir de maintenant, nous allons faire les hypothèses suivantes pour notre étude :
 -$p>0$
 -$F$ est absolument continue (admet une densité $f$)
 -$F(0)=0$ (pas de réparation instantanée)
 
-Nous allons observer le système jusqu'à la $m$-ème réparation parfaite. On note $n$ le nombre total de panne et donc $n-m$ est le nombre de réparation imparfaite. 
+Nous allons observer le système jusqu'à la $m$-ème réparation parfaite. On note $n$ le nombre total de pannes et donc $n-m$ est le nombre de réparations imparfaites. 
 
-La suite des âges observés $(a_i)$ est entièrement déterminé par les couples $(t_i,z_i)$.
+La suite des âges observés $(a_i)$ est entièrement déterminée par les couples $(t_i,z_i)$.
 $$
 L(p,F)=f(t_1)p^{z_1}(1-p)^{1-z_1}\times\frac{f(t_2+a_1)}{S(a_1)}p^{z_2}(1-p)^{1-z_2}\times ...\times\frac{f(t_n+a_{n-1})}{S(a_{n-1})}p^{z_n}(1-p)^{1-z_n}
 $$
@@ -59,7 +58,7 @@ $$
 L(p,F|(t_1,t_2),(z_1, z_2))=f_{T_1,Z_1}(t_1, z_1)f_{T_2,Z_2}((t_2, z_2)|(T_1 = t_1, Z_1 = z_1))
 $$
 
-Par indépendance des événements "panne" est "la réparation est parfaite", on a :
+Par indépendance des événements "panne" et "la réparation est parfaite", on a :
 
 $$
 f_{T_1,Z_1}(t_1, z_1) = f(t_1)p^{z_1}(1-p)^{1-z_1}
@@ -77,13 +76,13 @@ Si $z_1 = 1$ (réparation imparfaite), on a $a_1 = 0$ et $S(a_1) = 1$, d'où :
 $$
 f_{T_2,Z_2}((t_2, z_2)|(T_1 = t_1, Z_1 = z_1)) = f(t_2) p^{z_2} (1-p)^{1-z_2} = \frac{f(t_2+a_1)}{S(a_1)} p^{z_2} (1-p)^{1-z_2}
 $$
-En notant $x_i$ l'âge observé juste avant la $i$-ème panne. Si $z_i=0$, on a directement que $a_i=x_i$, si $z_i=1$, $a_i=0$, $x_i=a_{i-1} +t_i$, mais on peut tout de même écrire que $S(a_i)=S(x_i)^{1-z_i}$. Si dans la formule de la vraisemblance, on remplace les $a_i$ par les $x_i$ et qu'on factorise les $p$ et $(1-p)$ ensemble à l'aide des $n$ et $m$ on obtient:
+En notant $x_i$ l'âge observé juste avant la $i$-ème panne : si $z_i=0$, on a directement que $a_i=x_i$, si $z_i=1$, $a_i=0$, $x_i=a_{i-1} +t_i$, mais on peut tout de même écrire que $S(a_i)=S(x_i)^{1-z_i}$. Si dans la formule de la vraisemblance, on remplace les $a_i$ par les $x_i$ et qu'on factorise les $p$ et $(1-p)$ ensemble à l'aide des $n$ et $m$, on obtient:
 
 $$
 L(p,F)=p^{m}(1-p)^{n-m}f(x_1) \frac{f(x_2)}{S(x_1)^{1-z_1}}\times ...\times\frac{f(x_n)}{S(x_{n-1})^{1-z_{n-1}}}
 $$
 
-Avec cette écriture de la vraisemblance, on trouve le MLE de $p$: $\hat p =\frac{m}{n}$. Ce résultat est plutôt logique, on estime la probabilité $p$ de réparation parfaite en calculant le ratio de réparation parfaite sur le nombre total de pannes. 
+Avec cette écriture de la vraisemblance, on trouve le MLE de $p$: $\hat p =\frac{m}{n}$. Ce résultat est cohérent, on estime la probabilité $p$ de réparation parfaite en calculant le ratio de réparations parfaites sur le nombre total de pannes. 
 
 Maintenant qu'on a le MLE de $p$, intéressons nous à $F$.
 
@@ -92,9 +91,9 @@ $$
 l(F)= \prod^n_{i=1}\frac{(F(x_{(i)})-F(x_{(i)}^-))}{S(x_{(i-1)})^{1-z_{(i-1)}}}
 $$
 où la densité $f$ en $x_i$ est approximée par $F(x_{(i)})-F(x_{(i)}^-)$,les $x_{(i)}$ sont les âges $x_i$ avant les pannes ordonnés. Les $z_{(i)}$ ne sont pas ordonnés mais sont les $z_i$ réindexés pour que $z_{(i)}$ correspondent au mode de réparation après la panne survenue à l'âge $x_{(i)}$.
-En particulier notre MLE empirique ne sera pas nécessairement continue à l'inverse de la vraie fonction $F$.
+En particulier notre MLE empirique ne sera pas nécessairement continu à l'inverse de la vraie fonction $F$.
 
-Malheureusement, le maximum de la fonction $l(F)$ n'est pas toujours atteignable. En effet, il faut que $z_{(n-1)} = 1$. 
+Malheureusement, le maximum de la fonction $l(F)$ n'est pas toujours atteignable. En effet, il faut que $z_{(n-1)} = 1$ [@Whitaker1989]. 
 
 Plaçons nous dans le cas où $z_{(n-1)}=1$. Définissons $\phi_i=\frac{S(x_{(i)})}{S(x_{(i-1)})}$ la probabilité de survivre jusqu'à l'âge $x_{(i)}$ sachant que le système n'a pas eu de réparation parfaite depuis une durée $x_{(i-1)}$. Ainsi, notre problème de maximisation revient à maximiser par rapport à $\phi$:
 $$
@@ -118,7 +117,7 @@ $$
 \right.
 $$
 
-Dans le cas où $z_{(n-1)}=0$, on a toujours le même maximiseur de $l(\phi)$ mais désormais par définition, $k_{n-1}=0$ et donc $\hat\phi_{n-1}=0$ ce qui implique que $\hat S(t)=0, t \geq x_{(n-1)}$. Ainsi, on voit que notre approximation de la vraisemblance $l(F)$ n'est pas défini car dans le dernier terme du produit, on a une division par 0. C'est pourquoi dans ce cas précis, il n'existe pas de MLE empirique issu de la maximisation de notre estimation de la vraisemblance. Ce MLE empirique est en réalité un "neighbourhood MLE" de F dans une certaine topologie, on peut tout de même l'utiliser pour $z_{(n-1)}=0$.
+Dans le cas où $z_{(n-1)}=0$, on a toujours le même maximiseur de $l(\phi)$ mais désormais par définition, $k_{n-1}=0$ et donc $\hat\phi_{n-1}=0$ ce qui implique que $\hat S(t)=0, t \geq x_{(n-1)}$. Ainsi, on voit que notre approximation de la vraisemblance $l(F)$ n'est pas définie car dans le dernier terme du produit, on a une division par 0. C'est pourquoi dans ce cas précis, il n'existe pas de MLE empirique issu de la maximisation de notre estimation de la vraisemblance. Ce MLE empirique est en réalité un "neighbourhood MLE" de F dans une certaine topologie, on peut tout de même l'utiliser pour $z_{(n-1)}=0$.
 
 Ce modèle de BP peut-être vu comme une suite de réparations parfaites indépendantes, ainsi, on peut se restreindre aux temps de réparations parfaites pour étudier les propriétés du modèle.
 On a le résultat suivant (citer BP 1983) qui nous dit que si $Y_1$ est l'âge du système à la première réparation parfaite, alors la fonction de survie $S_y$ de $Y_1$ vérifie: 
@@ -140,9 +139,9 @@ Ces deux derniers estimateurs n'exploitent pas toutes les informations issues de
 
 ## Simulation d'un processus de Weibull
 
-Les $Z_i$ suivent une loi Binomiale par leur définition: $\mathbb{P}(Z_i=1)=p$.
+Les $Z_i$ suivent une loi Binomiale par définition: $\mathbb{P}(Z_i=1)=p$.
 
-On simule ici le modèle. Pour ce faire, on commence par créer deux fonctions: $simulPPh1$ et $invWeibull$. La fonction $simulPPh1$ permet de simuler un processus de poisson homogène: on simule $k$ fois une variable aléatoire suivant la loi exponentielle de paramètre 1 ce qui nous donne une liste de nombres telle que $[n_1 , n_2,...,n_k]$. On renvoie ensuite les temps d'arrivés simulés (notés $A_k$ dans la fonction $simulPPIWeibull$ ) qui représentent la somme cumulée telle que $[n_1, n_1+n_2,... , n_1+...+n_k]$.
+On simule ici le modèle. Pour ce faire, on commence par créer deux fonctions: $simulPPh1$ et $invWeibull$. La fonction $simulPPh1$ permet de simuler un processus de Poisson homogène: on simule $k$ fois une variable aléatoire suivant la loi exponentielle de paramètre 1 ce qui nous donne une liste de nombres $[n_1 , n_2,...,n_k]$. On renvoie ensuite les temps d'arrivée simulés (notés $A_k$ dans la fonction $simulPPIWeibull$ ) qui représentent la somme cumulée $[n_1, n_1+n_2,... , n_1+...+n_k]$.
 
 ```{r simulPPh1,}
 simulPPh1 <- function(k)
@@ -170,7 +169,7 @@ invWeibull <- function(y, alpha=1, beta=2)
 }
 ```
 
-On peut maintenant simuler le modèle BP. Pour cela, on génère une variable aléatoire géométrique de paramètre $p$, représentant le nombre $k$ de réparations imparfaites nécessaires avant d'atteindre la première réparation parfaite. On simule ensuite le processus homogène comme expliqué précédemment et on retourne les temps $T_i = \Lambda^{-1}(A_i)$ et les valeurs de la fonction de survie de la loi Weibull: $S(t)=exp{(-(\frac{t}{\alpha})^{\beta})}$ créant ainsi un processus de poisson inhomogène. On réitère cela $m$ fois où $m$ représente le nombre de réparations parfaites.
+On peut maintenant simuler le modèle BP. Pour cela, on génère une variable aléatoire géométrique de paramètre $p$, représentant le nombre $k$ de réparations imparfaites nécessaires avant d'atteindre la première réparation parfaite. On simule ensuite le processus homogène comme expliqué précédemment et on retourne les temps $T_i = \Lambda^{-1}(A_i)$ et les valeurs de la fonction de survie de la loi Weibull: $S(t)=exp{(-(\frac{t}{\alpha})^{\beta})}$ créant ainsi un processus de Poisson inhomogène. On réitère cela $m$ fois où $m$ représente le nombre de réparations parfaites souhaité.
 
 ## Première simulation d'un processus de Brown-Proschan 
 ```{r simul, eval=TRUE, include=TRUE}
@@ -196,7 +195,7 @@ simulPPIWeibull <- function(m, alpha, beta, p)
 }
 ```
 
-On va désormais afficher les résultats d'une simulation de notre processus de BP pour vérifier que notre code marche bien. Pour cela, on affiche pour chaque temps de pannes, la valeur de la fonction de survie théorique (calculable explicitement dans le cas de Weibull).
+On va désormais afficher les résultats d'une simulation de notre processus de BP pour vérifier que notre code marche bien. Pour cela, on affiche pour chaque temps de panne, la valeur de la fonction de survie théorique (calculable explicitement dans le cas de Weibull).
 ```{r plot}
 m <- 5
 p <- 0.2
@@ -215,7 +214,7 @@ ggplot(df_result, aes(x = T, y = S)) +
   theme_minimal(base_size = 14)
 
 ```
-On voit donc que graphe est cohérent d'après les résulats des différents vecteurs. En effet, lorsqu'il n'y a pas de réparations parfaites, l'âge du système ne cesse d'augmenter et la valeur de la fonction de survie tend vers 0 et à l'inverse, lorsqu'une réparation est parfaite, son âge retombe à zéro et la fonction de survie vaut à nouveau 1.
+On voit donc que le graphe est cohérent d'après les résulats des différents vecteurs. En effet, lorsqu'il n'y a pas de réparations parfaites, l'âge du système ne cesse d'augmenter et la valeur de la fonction de survie tend vers 0 et à l'inverse, lorsqu'une réparation est parfaite, son âge retombe à zéro et la fonction de survie vaut à nouveau 1.
 
 ## Estimation du paramètre $p$ par maximum de vraisemblance
 On implémente le calcul du MLE trouvé précedemment :$\hat p=m/n$.
@@ -244,12 +243,12 @@ df <- data.frame(m = 1:1000, p_hat = p_hat)
     theme_minimal(base_size = 14)
 
 ```
-On observe que plus $m$ augmente, plus notre estimation poctuelle se rapproche de la vraie valeur de $p$. On observe également que la variance diminue.
+On observe que plus $m$ augmente, plus notre estimation ponctuelle se rapproche de la vraie valeur de $p$. On observe également que la variance diminue.
 
 ## Estimation de l'intensité du processus par plusieurs méthodes
 
 ### Estimation par maximum de vraisemblance ou neighbourhood MLE
-On rappelle la  formule du MLE qui est bien défini uniquement si $z_{(n-1)}=1$ (voir première partie du document):
+On rappelle la  formule du MLE qui a des garanties théoriques uniquement si $z_{(n-1)}=1$ (voir première partie du document):
 $$
 \hat{S}(t) =
 \left\{
@@ -551,8 +550,8 @@ ggplot(df_mse_long, aes(x = m, y = log_MSE, color = Méthode)) +
 
 ```
 
-On voit que l'estimateur du MLE non paramétrique, qui est celui qui utilise le plus d'informations, mais qui ne possède pas de garanties théoriques en l'absence de $z_{n-1} = z_{n} = 1$, est celui qui possède les meilleures performances pour la majorité des simulations. C'est un résultat particulièrement visible lorsque les réparations parfaites sont assez rares comparées aux réparations imparfaites.
-On observe également que l'erreur des estimateurs à tendance à diminuer lorsqu'on augmente le nombre de réparations (via l'augmentations du nombre de réparations parfaites).
+On voit que l'estimateur du MLE non paramétrique, qui est celui qui utilise le plus d'informations, mais qui ne possède pas de garanties théoriques en l'absence de $z_{n-1} = z_{n} = 1$, est celui qui possède tout de même les meilleures performances pour la majorité des simulations. C'est un résultat particulièrement visible lorsque les réparations parfaites sont assez rares comparées aux réparations imparfaites.
+On observe également que l'erreur des estimateurs a tendance à diminuer lorsqu'on augmente le nombre de réparations (via l'augmentation du nombre de réparations parfaites).
 ```{r Variance, }
 nrpm <- 100 # Nombre de réparations parfaites max
 niter <- 10
@@ -570,7 +569,7 @@ for (m in 5:nrpm){
   for (i in 1:niter){
     res<-simulPPIWeibull2(m,4,2,0.2)
     Z<-res$Z
-    T<-res$T # PAS COHERENT AVEC LA DEFINITION THEORIQUE DE T !
+    T<-res$T 
     r<-MLE_S(T,Z)
     S_hatBP <- plot_MLE_S(t,r$x_order,r$phi_hat)
     idd<-MLE_emp_1(T,Z)
