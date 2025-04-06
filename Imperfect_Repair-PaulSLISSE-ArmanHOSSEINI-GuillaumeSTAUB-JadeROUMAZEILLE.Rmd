@@ -82,7 +82,31 @@ $$
 L(p,F)=p^{m}(1-p)^{n-m}f(x_1) \frac{f(x_2)}{S(x_1)^{1-z_1}}\times ...\times\frac{f(x_n)}{S(x_{n-1})^{1-z_{n-1}}}
 $$
 
-Avec cette écriture de la vraisemblance, on trouve le MLE de $p$: $\hat p =\frac{m}{n}$. Ce résultat est cohérent, on estime la probabilité $p$ de réparation parfaite en calculant le ratio de réparations parfaites sur le nombre total de pannes. 
+Avec cette écriture de la vraisemblance, on trouve le MLE de $p$: $\hat p =\frac{m}{n}$.
+On peut démontrer très facilement ce résultat. Prenons seulement la partie de la vraisemblance où $p$ intervient et passons au log:
+
+$$
+log(p^m(1-p)^{n-m})=mlog(p)+(n-m)log(1-p)=l(p)
+$$
+On dérive à l'ordre 1 puis à l'ordre 2:
+
+$$
+\frac{\mathrm{d}l(p)}{\mathrm{d}p}=\frac{m}{p}+\frac{m-n}{1-p} =0
+\iff
+\frac{m}{p}=\frac{n-m}{1-p}
+\iff
+p=\frac{m}{n}
+$$
+En dérivant une seconde fois on en déduit donc le maximum par concavité de la dérivée seconde.
+
+$$
+\frac{\mathrm{d}^2 l(p)}{\mathrm{d}p^2} = \frac{-m}{p^2}+\frac{m-n}{(1-p)^2} <0
+$$
+
+$$
+\implies
+\hat p=\frac{m}{n}
+$$
 
 Maintenant qu'on a le MLE de $p$, intéressons nous à $F$.
 
@@ -101,11 +125,25 @@ l(\phi)=\prod^n_{i=1}(1-\phi_i)\phi_i^{k_i}
 $$
 où $k_i=\sum^{n-1}_{j=i} z_{(j)}$ est le nombre de réparations parfaites pour des pannes intervenues à un âge supérieur à $x_{(i)}$.
 
-On montre facilement que le maximum de cette fonction est atteint en :
+On peut calculer le maximum de cette fonction :
+
+\begin{align}
+\frac{\partial l(\phi)}{\partial \phi_i} &= -\phi_i^{k_i} + (1 - \phi_i)k_i\phi_i^{k_i - 1}\nonumber \\
+\frac{\partial l(\phi)}{\partial \phi_i} &= 0 \nonumber \\
+\Leftrightarrow\quad & (1 - \phi_i)k_i\phi_i^{k_i - 1} = \phi_i^{k_i} \nonumber\\
+\Leftrightarrow\quad & (1 - \phi_i)k_i = \phi_i \nonumber\\
+\Leftrightarrow\quad & k_i = \phi_i(k_i + 1) \nonumber\\
+\Leftrightarrow\quad & \phi_i = \frac{k_i}{k_i + 1}\nonumber
+\end{align}
+
+Pour $i=n$, on a par définition $k_n=0$ donc $\hat \phi_n=0$.
+On obtient donc dans ce cas l'estimateur du maximum de vraisemblance:
 $$
 \hat\phi_i=\frac{k_i}{k_i+1} , 1\leq i\leq n-1 ; \hat\phi_n=0 
 $$
-Ainsi, on obtient le MLE empirique de la fonction de survie $S$:
+
+Ainsi, en utilisant la définition de la fonction $phi$, on peut reconstruire récursivement la fonction de survie constante par morceaux sur les intervalles $[x_{(i)},x_{(i+1)}[$ avec $\hat S(x_{(i)})=\hat\phi_i*\hat S(x_{(i-1)})$. On prend comme convention $\hat S(x_{(0)})=1$ car on sait que la fonction de survie tend vers 1 en $0$.
+On obtient donc le MLE non paramétrique de la fonction de survie $S$:
 $$
 \hat{S}(t) =
 \left\{
@@ -120,7 +158,7 @@ $$
 Dans le cas où $z_{(n-1)}=0$, on a toujours le même maximiseur de $l(\phi)$, mais désormais par définition, $k_{n-1}=0$ et donc $\hat\phi_{n-1}=0$ ce qui implique que $\hat S(t)=0, t \geq x_{(n-1)}$. Ainsi, on voit que notre approximation de la vraisemblance $l(F)$ n'est pas définie car dans le dernier terme du produit, on a une division par 0. C'est pourquoi dans ce cas précis, il n'existe pas de MLE empirique issu de la maximisation de notre estimation de la vraisemblance. Ce MLE empirique est en réalité un "neighbourhood MLE" de F dans une certaine topologie, on peut tout de même l'utiliser pour $z_{(n-1)}=0$.
 
 Ce modèle de BP peut-être vu comme une suite de réparations parfaites indépendantes, ainsi, on peut se restreindre aux temps de réparations parfaites pour étudier les propriétés du modèle.
-On a le résultat suivant (citer BP 1983) qui nous dit que si $Y_1$ est l'âge du système à la première réparation parfaite, alors la fonction de survie $S_y$ de $Y_1$ vérifie: 
+On a le résultat suivant [@Brown1983] qui nous dit que si $Y_1$ est l'âge du système à la première réparation parfaite, alors la fonction de survie $S_y$ de $Y_1$ vérifie: 
 $$
 S_y(t)=(S(t))^p
 $$
@@ -197,7 +235,7 @@ simulPPIWeibull <- function(m, alpha, beta, p)
 
 On va désormais afficher les résultats d'une simulation de notre processus de BP pour vérifier que notre code marche bien. Pour cela, on affiche pour chaque temps de panne, la valeur de la fonction de survie théorique (calculable explicitement dans le cas de Weibull).
 ```{r plot}
-m <- 5
+m <- 3
 p <- 0.2
 result <- simulPPIWeibull(m, 4, 2, p)
 print(result)
@@ -245,7 +283,7 @@ df <- data.frame(m = 1:1000, p_hat = p_hat)
 ```
 On observe que plus $m$ augmente, plus notre estimation ponctuelle se rapproche de la vraie valeur de $p$. On observe également que la variance diminue.
 
-## Estimation de l'intensité du processus par plusieurs méthodes
+## Estimation de la fonction de survie $S$ par plusieurs méthodes
 
 ### Estimation par maximum de vraisemblance ou neighbourhood MLE
 On rappelle la  formule du MLE qui a des garanties théoriques uniquement si $z_{(n-1)}=1$ (voir première partie du document):
@@ -281,7 +319,7 @@ simulPPIWeibull2 <- function(m, alpha, beta, p)
   return(list(T = T_k,Z=Z_k, T_succes = T_succes))
 }
 ```
-
+On choisit les paramètres suivants: $m=50$, $\alpha=4$, $\beta=2$ et $p=0.2$.
 ```{r}
 res<-simulPPIWeibull2(50,4,2,0.2)
 Z<-res$Z
@@ -618,6 +656,6 @@ ggplot(df_var_long, aes(x = m, y = logVar, color = Méthode)) +
 
 On remarque que le MLE non paramétrique est uniformément plus robuste que les estimateurs empiriques, sa plus faible variance indiquant sa robustesse. Ainsi, le MLE non paramétrique est à la fois plus robuste et plus consistant que les deux estimateurs empiriques. De plus, on remarque que la variance diminue avec l'augmentation du nombre de réparations (via l'augmentation du nombre de réparations parfaites).
 
-## Conclusion
+# Conclusion
+Ainsi, nous avons codé une façon de simuler le modèle de réparations imparfaites proposé par Brown et Proschan, dans le cadre d'un processus ayant une intensité de Weibull. Nous avons également implémenté l'estimateur suggéré par Whitaker et Samaniego, qui, sous certaines conditions, fournit un MLE pour la fonction de survie du processus. Nous avons pu vérifier que cet estimateur est plus précis et plus robuste que d'autres estimateurs qui n'utilisent pas nécessairement toutes les informations issues des simulations. Nous avons ici fait l'hypothèse que $p$, la probabilité de réparation parfaite, était constante, mais il serait également intéressant d'étudier l'estimation, plus complexe, des paramètres du modèle lorsque $p$ est une fonction non constante du temps.
 
-## Références
